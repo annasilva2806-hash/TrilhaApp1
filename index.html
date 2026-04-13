@@ -547,6 +547,10 @@ body.auth-ready #auth-logout-btn{display:inline-flex !important}
       <div class="fgroup"><label class="flbl">Meta h/sem</label><input class="finput" id="dh-input" type="number" placeholder="8" min="1"/></div>
       <div class="fgroup"><label class="flbl">Peso (1–5)</label><input class="finput" id="dw-input" type="number" placeholder="3" min="1" max="5"/></div>
     </div>
+    <div class="frow">
+      <div class="fgroup"><label class="flbl">Total de PDFs</label><input class="finput" id="dp-total" type="number" placeholder="0" min="0"/></div>
+      <div class="fgroup"><label class="flbl">PDFs lidos</label><input class="finput" id="dp-done" type="number" placeholder="0" min="0"/></div>
+    </div>
     <div class="fgroup"><label class="flbl">Cor</label><div class="cpicker" id="add-cp"></div></div>
     <div class="mfoot"><button class="btn btn-secondary" onclick="closeM('m-add-disc')">Cancelar</button><button class="btn btn-primary" onclick="addDisc()">Salvar</button></div>
   </div>
@@ -560,6 +564,10 @@ body.auth-ready #auth-logout-btn{display:inline-flex !important}
     <div class="frow">
       <div class="fgroup"><label class="flbl">Meta h/sem</label><input class="finput" id="ed-hours" type="number" min="1"/></div>
       <div class="fgroup"><label class="flbl">Peso (1–5)</label><input class="finput" id="ed-weight" type="number" min="1" max="5"/></div>
+    </div>
+    <div class="frow">
+      <div class="fgroup"><label class="flbl">Total de PDFs</label><input class="finput" id="ed-pdf-total" type="number" min="0"/></div>
+      <div class="fgroup"><label class="flbl">PDFs lidos</label><input class="finput" id="ed-pdf-done" type="number" min="0"/></div>
     </div>
     <div class="fgroup"><label class="flbl">Cor</label><div class="cpicker" id="edit-cp"></div></div>
     <div class="mfoot"><button class="btn btn-secondary" onclick="closeM('m-edit-disc')">Cancelar</button><button class="btn btn-primary" onclick="saveEditDisc()">Salvar</button></div>
@@ -597,7 +605,7 @@ body.auth-ready #auth-logout-btn{display:inline-flex !important}
   <div class="modal">
     <h2>Registrar Questões</h2>
     <div class="fgroup"><label class="flbl">Disciplina</label><select class="fsel" id="aq-disc"></select></div>
-    <div class="fgroup"><label class="flbl">TÃ³pico</label><select class="fsel" id="aq-topic"></select></div>
+      <div class="fgroup"><label class="flbl">Tópico</label><select class="fsel" id="aq-topic"></select></div>
     <div class="fgroup"><label class="flbl">Data</label><input class="finput" id="aq-date" type="date"/></div>
     <div class="frow">
       <div class="fgroup"><label class="flbl">Total</label><input class="finput" id="aq-tot" type="number" min="1" placeholder="20" oninput="calcPctEl('aq-tot','aq-hit','aq-pct')"/></div>
@@ -640,7 +648,7 @@ body.auth-ready #auth-logout-btn{display:inline-flex !important}
     <h2>🎯 Registrar Questões</h2>
     <input type="hidden" id="qs-disc-id"/><input type="hidden" id="qs-disc-name"/><input type="hidden" id="qs-topic-id"/>
     <div class="fgroup">
-      <label class="flbl">TÃ³pico estudado</label>
+        <label class="flbl">Tópico estudado</label>
       <div id="qs-topic-pick"></div>
       <div class="topic-inline-note" id="qs-topic-note"></div>
     </div>
@@ -3045,7 +3053,7 @@ body{
       <img src="" alt="TrilhaApp" id="auth-logo"/>
       <div>
         <h1>TrilhaApp</h1>
-        <p>Sua trilha de aprovaÃ§Ã£o com dados reais de estudo.</p>
+        <p>Sua trilha de aprovação com dados reais de estudo.</p>
       </div>
     </div>
     <div class="auth-tabs">
@@ -3053,7 +3061,7 @@ body{
       <button class="btn btn-secondary auth-tab" type="button" id="auth-tab-register" onclick="setAuthMode('register')">Criar acesso</button>
     </div>
     <div class="auth-error" id="auth-error"></div>
-    <div class="auth-copy">O acesso Ã© local neste navegador. Depois do primeiro cadastro, o app guarda apenas os dados reais que vocÃª registrar.</div>
+    <div class="auth-copy">O acesso é local neste navegador. Depois do primeiro cadastro, o app guarda apenas os dados reais que você registrar.</div>
     <div class="fgroup" id="auth-name-wrap">
       <label class="flbl">Seu nome</label>
       <input class="finput" id="auth-name" type="text" placeholder="Ex.: Ana"/>
@@ -3069,7 +3077,7 @@ body{
     <div class="mfoot" style="margin-top:10px;justify-content:flex-start">
       <button class="btn btn-primary" type="button" id="auth-submit" onclick="submitAuth()">Entrar</button>
     </div>
-    <div class="auth-note">Se quiser recomeÃ§ar do zero, use <strong>Apagar dados</strong> na aba <strong>Ciclos</strong>. Isso limpa o estudo, mas preserva seu acesso local.</div>
+    <div class="auth-note">Se quiser recomeçar do zero, use <strong>Apagar dados</strong> na aba <strong>Ciclos</strong>. Isso limpa o estudo, mas preserva seu acesso local.</div>
   </div>
 </div>
 <script>
@@ -3106,14 +3114,22 @@ body{
     document.body.classList.remove('auth-locked');
     document.body.classList.add('auth-ready');
     var userPill = document.getElementById('auth-user-pill');
-    if(userPill) userPill.textContent = 'OlÃ¡, ' + (name || 'concurseiro(a)');
+    if(userPill) userPill.textContent = 'Olá, ' + (name || 'concurseiro(a)');
   }
 
   async function refreshAuthView(){
     var account = readAccount();
     var session = localStorage.getItem(SESSION_KEY);
     var logo = document.getElementById('auth-logo');
-    if(logo && typeof __LOGO_DATA__ !== 'undefined') logo.src = __LOGO_DATA__;
+    if(logo){
+      if(typeof __LOGO_DATA__ !== 'undefined' && __LOGO_DATA__){
+        logo.src = __LOGO_DATA__;
+        logo.style.display = '';
+      }else{
+        logo.removeAttribute('src');
+        logo.style.display = 'none';
+      }
+    }
     if(window.TrilhaCloud){
       window.TrilhaCloud.mountAuthUI();
       var cloudState = await window.TrilhaCloud.getSessionState();
@@ -3166,7 +3182,7 @@ body{
         password: password
       });
       if(!cloudResult || !cloudResult.ok){
-        setError(cloudResult && cloudResult.error ? cloudResult.error : 'Nao foi possivel autenticar na nuvem.');
+        setError(cloudResult && cloudResult.error ? cloudResult.error : 'Não foi possível autenticar na nuvem.');
         return;
       }
       localStorage.setItem(SESSION_KEY, cloudResult.name || name || email || 'concurseiro(a)');
@@ -3193,7 +3209,7 @@ body{
       return;
     }
     if(email !== String(account.email || '').toLowerCase() || password !== account.password){
-      setError('E-mail ou senha invÃ¡lidos.');
+      setError('E-mail ou senha inválidos.');
       return;
     }
     localStorage.setItem(SESSION_KEY, account.name || 'concurseiro(a)');
@@ -4566,6 +4582,249 @@ body{
   if(document.getElementById('page-home') && document.getElementById('page-home').classList.contains('active') && typeof renderHome === 'function'){
     renderHome();
   }
+})();
+</script>
+<script>
+(function(){
+  function getPdfMeta(disc){
+    if(!disc) return { total:0, done:0, remaining:0 };
+    var total = parseInt(disc.pdfTotal, 10);
+    var done = parseInt(disc.pdfDone, 10);
+    total = isNaN(total) || total < 0 ? 0 : total;
+    done = isNaN(done) || done < 0 ? 0 : done;
+    if(done > total) total = done;
+    return { total: total, done: done, remaining: Math.max(0, total - done) };
+  }
+
+  function applyPdfMeta(disc, totalValue, doneValue){
+    if(!disc) return;
+    var total = parseInt(totalValue, 10);
+    var done = parseInt(doneValue, 10);
+    total = isNaN(total) || total < 0 ? 0 : total;
+    done = isNaN(done) || done < 0 ? 0 : done;
+    if(done > total) total = done;
+    disc.pdfTotal = total;
+    disc.pdfDone = done;
+  }
+
+  function ensurePdfMeta(){
+    var changed = false;
+    (discs || []).forEach(function(disc){
+      var meta = getPdfMeta(disc);
+      if(disc.pdfTotal !== meta.total || disc.pdfDone !== meta.done){
+        disc.pdfTotal = meta.total;
+        disc.pdfDone = meta.done;
+        changed = true;
+      }
+    });
+    return changed;
+  }
+
+  window.updateDiscPdfProgress = function(id, delta){
+    var disc = discs.find(function(item){ return item.id === id; });
+    if(!disc) return;
+    var meta = getPdfMeta(disc);
+    var nextDone = Math.max(0, meta.done + delta);
+    var nextTotal = meta.total;
+    if(nextDone > nextTotal) nextTotal = nextDone;
+    applyPdfMeta(disc, nextTotal, nextDone);
+    save();
+    renderAll();
+  };
+
+  if(ensurePdfMeta()) save();
+
+  window.openEditDisc = function(id){
+    var d = discs.find(function(item){ return item.id === id; });
+    if(!d) return;
+    var meta = getPdfMeta(d);
+    editColor = d.color;
+    document.getElementById('ed-id').value = d.id;
+    document.getElementById('ed-name').value = d.name;
+    document.getElementById('ed-hours').value = d.weeklyGoal || 8;
+    document.getElementById('ed-weight').value = d.weight || 3;
+    document.getElementById('ed-pdf-total').value = meta.total || 0;
+    document.getElementById('ed-pdf-done').value = meta.done || 0;
+    openM('m-edit-disc');
+  };
+
+  window.saveEditDisc = function(){
+    var id = document.getElementById('ed-id').value;
+    var d = discs.find(function(item){ return item.id === id; });
+    if(!d) return;
+    d.name = document.getElementById('ed-name').value.trim() || d.name;
+    d.weeklyGoal = parseInt(document.getElementById('ed-hours').value, 10) || 8;
+    d.weight = parseInt(document.getElementById('ed-weight').value, 10) || 3;
+    d.color = editColor;
+    applyPdfMeta(d, document.getElementById('ed-pdf-total').value, document.getElementById('ed-pdf-done').value);
+    save();
+    closeM('m-edit-disc');
+    renderAll();
+  };
+
+  window.addDisc = function(){
+    var name = document.getElementById('dn-input').value.trim();
+    if(!name){
+      alert('Informe o nome.');
+      return;
+    }
+    var id = 'd' + Date.now();
+    var disc = {
+      id: id,
+      name: name,
+      color: addColor,
+      weight: parseInt(document.getElementById('dw-input').value, 10) || 3,
+      weeklyGoal: parseInt(document.getElementById('dh-input').value, 10) || 8,
+      studied: 0,
+      status: 'pending',
+      lastStudied: null
+    };
+    applyPdfMeta(disc, document.getElementById('dp-total').value, document.getElementById('dp-done').value);
+    discs.push(disc);
+    topics[id] = [];
+    save();
+    closeM('m-add-disc');
+    document.getElementById('dn-input').value = '';
+    document.getElementById('dh-input').value = '';
+    document.getElementById('dw-input').value = '';
+    document.getElementById('dp-total').value = '';
+    document.getElementById('dp-done').value = '';
+    renderAll();
+  };
+
+  window.addFromEdital = function(name, key){
+    if(discs.find(function(item){ return item.name === name; })){
+      alert('"' + name + '" já existe.');
+      return;
+    }
+    var parsed = window._editalParsed;
+    var color = COLORS[discs.length % COLORS.length];
+    var id = 'd' + Date.now();
+    discs.push({
+      id: id,
+      name: name,
+      color: color,
+      weight: 3,
+      weeklyGoal: 8,
+      studied: 0,
+      status: 'pending',
+      lastStudied: null,
+      pdfTotal: 0,
+      pdfDone: 0
+    });
+    topics[id] = ((parsed && parsed.dm[key] && parsed.dm[key].topics) || []).map(function(topic){
+      return { name: topic, done: false, id: 't' + Date.now() + Math.random() };
+    });
+    save();
+    alert('"' + name + '" adicionada!');
+  };
+
+  window.addAllEdital = function(){
+    var parsed = window._editalParsed;
+    if(!parsed) return;
+    var added = 0;
+    parsed.do_.forEach(function(key){
+      var disc = parsed.dm[key];
+      if(discs.find(function(item){ return item.name === disc.name; })) return;
+      var color = COLORS[discs.length % COLORS.length];
+      var id = 'd' + Date.now() + Math.random();
+      discs.push({
+        id: id,
+        name: disc.name,
+        color: color,
+        weight: 3,
+        weeklyGoal: 8,
+        studied: 0,
+        status: 'pending',
+        lastStudied: null,
+        pdfTotal: 0,
+        pdfDone: 0
+      });
+      topics[id] = disc.topics.map(function(topic){
+        return { name: topic, done: false, id: 't' + Date.now() + Math.random() };
+      });
+      added++;
+    });
+    save();
+    alert(added + ' adicionada(s)!');
+    renderAll();
+  };
+
+  window.renderPlan = function(){
+    ensurePdfMeta();
+    var el = document.getElementById('plan-list');
+    if(!discs.length){
+      el.innerHTML = "<div class='empty'><div class='eico'>📖</div><div class='etxt'>Sem disciplinas.<br><button class='btn btn-primary' style='margin-top:10px' onclick=\"openM('m-add-disc')\">+ Nova</button></div></div>";
+      return;
+    }
+    var list = cycle.length ? cycle.map(function(entry){ return discs.find(function(disc){ return disc.id === entry.discId; }); }).filter(Boolean) : discs;
+    el.innerHTML = list.map(function(d, i){
+      var pct = d.weeklyGoal ? Math.min(100, Math.round((d.studied || 0) / 3600 / d.weeklyGoal * 100)) : 0;
+      var meta = getPdfMeta(d);
+      var statusMap = { pending:'b-pending Pendente', active:'b-active Em andamento', done:'b-done Concluído' };
+      var parts = (statusMap[d.status || 'pending'] || statusMap.pending).split(' ');
+      var cls = parts[0];
+      var lbl = parts.slice(1).join(' ');
+      return "<div class='disc-row" + (d.status === 'active' ? " studying" : "") + "'>" +
+        "<span style='color:var(--text3);font-size:.72rem;width:18px'>" + (i + 1) + "</span>" +
+        "<div class='d-color' style='background:" + d.color + "'></div>" +
+        "<div class='d-info'>" +
+          "<div class='d-name'>" + d.name + "</div>" +
+          "<div class='d-meta'>Meta " + (d.weeklyGoal || '—') + "h/sem · Peso " + (d.weight || 1) + " · PDFs " + meta.done + "/" + meta.total + " · Faltam " + meta.remaining + "</div>" +
+          "<div style='margin-top:5px'><div class='pbar'><div class='pfill' style='width:" + pct + "%;background:" + d.color + "'></div></div></div>" +
+        "</div>" +
+        "<div style='text-align:right;min-width:70px'><div style='font-size:.82rem;font-weight:600'>" + fmtH(d.studied || 0) + "</div><div style='font-size:.65rem;color:var(--text3)'>" + pct + "%</div></div>" +
+        "<span class='badge " + cls + "'>" + lbl + "</span>" +
+        "<div style='display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end'>" +
+          "<button class='btn btn-auth btn-icon' title='PDF lido' onclick=\"updateDiscPdfProgress('" + d.id + "',1)\">+PDF</button>" +
+          "<button class='btn btn-ghost btn-icon' title='Desfazer PDF' onclick=\"updateDiscPdfProgress('" + d.id + "',-1)\">-PDF</button>" +
+          "<button class='btn btn-primary btn-icon' onclick=\"startStudy('" + d.id + "')\">▶</button>" +
+          "<button class='btn btn-secondary btn-icon' onclick=\"resetDisc('" + d.id + "')\">↺</button>" +
+          "<button class='btn btn-ghost btn-icon' onclick=\"openEditDisc('" + d.id + "')\">✏️</button>" +
+          "<button class='btn btn-danger btn-icon' onclick=\"delDisc('" + d.id + "')\">✕</button>" +
+        "</div>" +
+      "</div>";
+    }).join('');
+  };
+
+  window.renderDisc = function(){
+    ensurePdfMeta();
+    var el = document.getElementById('disc-grid');
+    if(!discs.length){
+      el.innerHTML = "<div class='empty' style='grid-column:1/-1'><div class='eico'>📖</div><div class='etxt'>Sem disciplinas.</div></div>";
+      return;
+    }
+    el.innerHTML = discs.map(function(d){
+      var pct = d.weeklyGoal ? Math.min(100, Math.round((d.studied || 0) / 3600 / d.weeklyGoal * 100)) : 0;
+      var tc = (topics[d.id] || []).length;
+      var dc = (topics[d.id] || []).filter(function(topic){ return topic.done; }).length;
+      var meta = getPdfMeta(d);
+      return "<div class='card fi' style='border-top:3px solid " + d.color + "'>" +
+        "<div style='display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px'>" +
+          "<div><div style='font-weight:700;font-size:.88rem'>" + d.name + "</div><div style='font-size:.68rem;color:var(--text3);margin-top:1px'>Meta: " + (d.weeklyGoal || '—') + "h/sem · Peso: " + (d.weight || 1) + "</div></div>" +
+          "<div style='display:flex;gap:3px'>" +
+            "<button class='btn btn-ghost btn-icon' onclick=\"openEditDisc('" + d.id + "')\">✏️</button>" +
+            "<button class='btn btn-ghost btn-icon' onclick=\"delDisc('" + d.id + "')\">🗑</button>" +
+          "</div>" +
+        "</div>" +
+        "<div style='display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:12px'>" +
+          "<div><div style='font-size:1.1rem;font-weight:700;color:" + d.color + "'>" + fmtH(d.studied || 0) + "</div><div style='font-size:.65rem;color:var(--text3)'>estudado</div></div>" +
+          "<div><div style='font-size:1.1rem;font-weight:700'>" + tc + "</div><div style='font-size:.65rem;color:var(--text3)'>tópicos</div></div>" +
+          "<div><div style='font-size:1.1rem;font-weight:700;color:var(--green)'>" + dc + "</div><div style='font-size:.65rem;color:var(--text3)'>feitos</div></div>" +
+          "<div><div style='font-size:1.1rem;font-weight:700;color:var(--purple)'>" + meta.done + "/" + meta.total + "</div><div style='font-size:.65rem;color:var(--text3)'>PDFs · faltam " + meta.remaining + "</div></div>" +
+        "</div>" +
+        "<div class='pbar' style='margin-bottom:8px'><div class='pfill' style='width:" + pct + "%;background:" + d.color + "'></div></div>" +
+        "<div style='display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap'>" +
+          "<span style='font-size:.68rem;color:var(--text3)'>" + pct + "% da meta semanal</span>" +
+          "<div style='display:flex;gap:6px;flex-wrap:wrap'>" +
+            "<button class='btn btn-auth' style='font-size:.72rem;padding:4px 10px' onclick=\"updateDiscPdfProgress('" + d.id + "',1)\">+1 PDF lido</button>" +
+            "<button class='btn btn-secondary' style='font-size:.72rem;padding:4px 10px' onclick=\"updateDiscPdfProgress('" + d.id + "',-1)\">Desfazer PDF</button>" +
+            "<button class='btn btn-primary' style='font-size:.72rem;padding:4px 10px' onclick=\"startStudy('" + d.id + "')\">▶ Estudar</button>" +
+          "</div>" +
+        "</div>" +
+      "</div>";
+    }).join('');
+  };
 })();
 </script>
 </body>
