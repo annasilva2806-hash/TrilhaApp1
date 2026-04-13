@@ -142,9 +142,25 @@ body.auth-locked #sidebar,body.auth-locked #main{display:none}
 .topic-choice span{display:block;font-size:.68rem;color:var(--text3);margin-top:4px}
 .topic-inline-note{font-size:.7rem;color:var(--text3);margin-top:6px}
 .section-divider{height:1px;background:rgba(190,161,129,.3);margin:14px 0}
-.auth-shell{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:24px;background:linear-gradient(180deg,#ffffff 0%,#f6fbff 100%);z-index:400}
+.auth-shell{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:24px;background:
+radial-gradient(circle at top left,rgba(255,191,31,.18),transparent 28%),
+radial-gradient(circle at bottom right,rgba(91,63,209,.18),transparent 32%),
+linear-gradient(135deg,#f5f0ff 0%,#eef5ff 45%,#ffffff 100%);z-index:400}
 body.auth-locked .auth-shell{display:flex}
-.auth-card{width:min(460px,100%);background:rgba(255,255,255,.98);border:1px solid rgba(18,58,89,.08);border-radius:24px;padding:28px;box-shadow:0 24px 60px rgba(18,58,89,.10)}
+.auth-stage{width:min(1080px,100%);display:grid;grid-template-columns:minmax(0,1fr) minmax(360px,430px);gap:24px;align-items:center}
+.auth-visual{position:relative;overflow:hidden;border-radius:32px;min-height:640px;padding:36px;background:
+radial-gradient(circle at top left,rgba(255,191,31,.20),transparent 26%),
+radial-gradient(circle at bottom right,rgba(91,63,209,.18),transparent 28%),
+linear-gradient(180deg,#ffffff 0%,#f8f5ff 100%);
+border:1px solid rgba(91,63,209,.10);box-shadow:0 24px 70px rgba(18,58,89,.08);display:flex;align-items:center;justify-content:center}
+.auth-visual:before{content:"";position:absolute;inset:22px;border-radius:26px;background:linear-gradient(145deg,rgba(255,255,255,.72) 0%,rgba(245,240,255,.45) 100%);border:1px solid rgba(91,63,209,.08)}
+.auth-visual-copy,.auth-visual-mark{position:relative;z-index:1}
+.auth-visual-copy{position:absolute;top:36px;left:36px;right:36px;text-align:left}
+.auth-visual-kicker{display:inline-flex;align-items:center;padding:7px 12px;border-radius:999px;background:rgba(91,63,209,.08);border:1px solid rgba(91,63,209,.10);font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#5b3fd1}
+.auth-visual h2{font-size:2.2rem;line-height:1.02;letter-spacing:-.04em;margin-top:18px;color:var(--text);max-width:460px}
+.auth-visual p{font-size:.94rem;line-height:1.65;color:var(--text2);margin-top:14px;max-width:420px}
+.auth-watermark{width:min(78%,520px);max-height:78vh;object-fit:contain;filter:drop-shadow(0 32px 60px rgba(18,58,89,.10))}
+.auth-card{width:100%;background:rgba(255,255,255,.98);border:1px solid rgba(18,58,89,.08);border-radius:32px;padding:30px;box-shadow:0 24px 60px rgba(18,58,89,.10);backdrop-filter:blur(18px)}
 .auth-brand{display:flex;align-items:center;gap:14px;margin-bottom:18px}
 .auth-brand img{width:58px;height:58px;object-fit:contain}
 .auth-brand h1{font-size:1.35rem;line-height:1.1}
@@ -3044,40 +3060,67 @@ body{
 @media(max-width:768px){
   .page{padding:16px 12px}
   .topbar{padding:12px 14px 12px 52px}
+  .auth-stage{grid-template-columns:1fr}
+  .auth-visual{min-height:280px;padding:20px}
+  .auth-visual-copy{top:22px;left:22px;right:22px}
+  .auth-visual h2{font-size:2rem}
+  .auth-watermark{width:min(72%,260px);max-height:220px}
   .auth-card{padding:24px}
 }
 </style>
 <div class="auth-shell" id="auth-shell">
-  <div class="auth-card">
-    <div class="auth-brand">
-      <img src="" alt="TrilhaApp" id="auth-logo"/>
-      <div>
-        <h1>TrilhaApp</h1>
-        <p>Sua trilha de aprovação com dados reais de estudo.</p>
+  <div class="auth-stage">
+    <div class="auth-visual">
+      <div class="auth-visual-copy">
+        <div class="auth-visual-kicker">Planejamento inteligente</div>
+        <h2>Estude com clareza, constância e decisão.</h2>
+        <p>Organize editais, acompanhe a sua evolução e mantenha um ritmo sustentável de estudos com uma plataforma mais prática e profissional.</p>
+        <div class="auth-visual-badges">
+          <span class="auth-visual-badge">1 edital ativo por vez</span>
+          <span class="auth-visual-badge">Revisões guiadas</span>
+          <span class="auth-visual-badge">Dados sincronizados</span>
+        </div>
+      </div>
+      <div class="auth-visual-mark">
+        <img src="" alt="Marca TrilhaApp" id="auth-watermark" class="auth-watermark"/>
+      </div>
+      <div class="auth-visual-footer">
+        <div class="auth-visual-stat"><strong>Planeje</strong><span>Transforme edital em rotina clara de estudo.</span></div>
+        <div class="auth-visual-stat"><strong>Registre</strong><span>Acompanhe horas, tópicos, PDFs e revisões com precisão.</span></div>
+        <div class="auth-visual-stat"><strong>Evolua</strong><span>Tome decisões com base no seu rendimento real.</span></div>
       </div>
     </div>
-    <div class="auth-tabs">
-      <button class="btn btn-primary auth-tab" type="button" id="auth-tab-login" onclick="setAuthMode('login')">Entrar</button>
-      <button class="btn btn-secondary auth-tab" type="button" id="auth-tab-register" onclick="setAuthMode('register')">Criar acesso</button>
+    <div class="auth-card">
+      <div class="auth-brand">
+        <img src="" alt="TrilhaApp" id="auth-logo"/>
+        <div>
+          <h1>TrilhaApp</h1>
+          <p>Sua trilha de aprovação com dados reais de estudo.</p>
+        </div>
+      </div>
+      <div class="auth-tabs">
+        <button class="btn btn-primary auth-tab" type="button" id="auth-tab-login" onclick="setAuthMode('login')">Entrar</button>
+        <button class="btn btn-secondary auth-tab" type="button" id="auth-tab-register" onclick="setAuthMode('register')">Criar acesso</button>
+      </div>
+      <div class="auth-error" id="auth-error"></div>
+      <div class="auth-copy">O acesso é local neste navegador. Depois do primeiro cadastro, o app guarda apenas os dados reais que você registrar.</div>
+      <div class="fgroup" id="auth-name-wrap">
+        <label class="flbl">Seu nome</label>
+        <input class="finput" id="auth-name" type="text" placeholder="Ex.: Ana"/>
+      </div>
+      <div class="fgroup">
+        <label class="flbl">E-mail</label>
+        <input class="finput" id="auth-email" type="email" placeholder="voce@exemplo.com"/>
+      </div>
+      <div class="fgroup">
+        <label class="flbl">Senha</label>
+        <input class="finput" id="auth-password" type="password" placeholder="Digite sua senha"/>
+      </div>
+      <div class="mfoot" style="margin-top:10px;justify-content:flex-start">
+        <button class="btn btn-primary" type="button" id="auth-submit" onclick="submitAuth()">Entrar</button>
+      </div>
+      <div class="auth-note">Se quiser recomeçar do zero, use <strong>Apagar dados</strong> na aba <strong>Ciclos</strong>. Isso limpa o estudo, mas preserva seu acesso local.</div>
     </div>
-    <div class="auth-error" id="auth-error"></div>
-    <div class="auth-copy">O acesso é local neste navegador. Depois do primeiro cadastro, o app guarda apenas os dados reais que você registrar.</div>
-    <div class="fgroup" id="auth-name-wrap">
-      <label class="flbl">Seu nome</label>
-      <input class="finput" id="auth-name" type="text" placeholder="Ex.: Ana"/>
-    </div>
-    <div class="fgroup">
-      <label class="flbl">E-mail</label>
-      <input class="finput" id="auth-email" type="email" placeholder="voce@exemplo.com"/>
-    </div>
-    <div class="fgroup">
-      <label class="flbl">Senha</label>
-      <input class="finput" id="auth-password" type="password" placeholder="Digite sua senha"/>
-    </div>
-    <div class="mfoot" style="margin-top:10px;justify-content:flex-start">
-      <button class="btn btn-primary" type="button" id="auth-submit" onclick="submitAuth()">Entrar</button>
-    </div>
-    <div class="auth-note">Se quiser recomeçar do zero, use <strong>Apagar dados</strong> na aba <strong>Ciclos</strong>. Isso limpa o estudo, mas preserva seu acesso local.</div>
   </div>
 </div>
 <script>
@@ -3121,15 +3164,18 @@ body{
     var account = readAccount();
     var session = localStorage.getItem(SESSION_KEY);
     var logo = document.getElementById('auth-logo');
-    if(logo){
-      if(typeof __LOGO_DATA__ !== 'undefined' && __LOGO_DATA__){
-        logo.src = __LOGO_DATA__;
-        logo.style.display = '';
+    var mark = document.getElementById('auth-watermark');
+    var hasLogo = typeof __LOGO_DATA__ !== 'undefined' && __LOGO_DATA__;
+    [logo, mark].forEach(function(node){
+      if(!node) return;
+      if(hasLogo){
+        node.src = __LOGO_DATA__;
+        node.style.display = '';
       }else{
-        logo.removeAttribute('src');
-        logo.style.display = 'none';
+        node.removeAttribute('src');
+        node.style.display = 'none';
       }
-    }
+    });
     if(window.TrilhaCloud){
       window.TrilhaCloud.mountAuthUI();
       var cloudState = await window.TrilhaCloud.getSessionState();
@@ -4825,6 +4871,174 @@ body{
       "</div>";
     }).join('');
   };
+})();
+</script>
+<style>
+.auth-visual-badges,
+.auth-visual-footer{display:none !important}
+.auth-visual{align-items:center !important;justify-content:center !important}
+.auth-visual-copy{top:30px !important;left:30px !important;right:30px !important}
+.auth-watermark{width:min(72%,520px) !important;max-height:min(68vh,560px) !important;align-self:center !important}
+@media(max-width:768px){
+  .auth-visual-copy{top:20px !important;left:20px !important;right:20px !important}
+  .auth-watermark{width:min(70%,240px) !important;max-height:220px !important}
+}
+</style>
+<script>
+(function(){
+  function cleanAuthHero(){
+    var copy = document.querySelector('.auth-visual-copy');
+    if(copy){
+      copy.innerHTML =
+        '<div class="auth-visual-kicker">TrilhaApp</div>' +
+        '<h2>Planejamento limpo para estudar com foco.</h2>' +
+        '<p>Organize seus editais, acompanhe sua evolução e mantenha sua rotina de estudos com mais clareza.</p>';
+    }
+
+    var subtitle = document.querySelector('.auth-brand p');
+    if(subtitle) subtitle.textContent = 'Sua trilha de aprovação com dados reais de estudo.';
+
+    var note = document.querySelector('.auth-note');
+    if(note) note.innerHTML = 'Se quiser recomeçar do zero, use <strong>Apagar dados</strong> na aba <strong>Ciclos</strong>. Isso limpa o estudo, mas preserva seu acesso local.';
+  }
+
+  cleanAuthHero();
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', cleanAuthHero);
+  }
+})();
+</script>
+<style>
+.auth-shell{
+  background:
+    radial-gradient(circle at 12% 50%,rgba(126,52,255,.18),transparent 28%),
+    radial-gradient(circle at 88% 48%,rgba(126,52,255,.16),transparent 30%),
+    linear-gradient(90deg,#1a0538 0%,#2a0b57 50%,#1a0538 100%) !important;
+}
+.auth-stage{
+  width:min(460px,100%) !important;
+  display:block !important;
+  background:transparent !important;
+  border:none !important;
+  box-shadow:none !important;
+  padding:0 !important;
+  backdrop-filter:none !important;
+}
+.auth-visual{display:none !important}
+.auth-visual:before,
+.auth-visual-copy,
+.auth-visual-badges,
+.auth-visual-footer{display:none !important}
+.auth-watermark{
+  width:min(72%,250px) !important;
+  max-height:210px !important;
+  align-self:center !important;
+  object-fit:contain !important;
+  filter:drop-shadow(0 20px 40px rgba(0,0,0,.32)) !important;
+}
+.auth-card{
+  max-width:460px !important;
+  margin:0 auto !important;
+  background:rgba(24,8,52,.82) !important;
+  border:1px solid rgba(165,118,255,.18) !important;
+  box-shadow:0 35px 90px rgba(7,1,18,.45) !important;
+  padding:28px 24px !important;
+}
+.auth-brand{
+  flex-direction:column !important;
+  align-items:center !important;
+  text-align:center !important;
+  gap:8px !important;
+  margin-bottom:18px !important;
+}
+.auth-brand img{
+  display:block !important;
+  width:min(48vw,180px) !important;
+  height:auto !important;
+  max-height:160px !important;
+  object-fit:contain !important;
+  margin-bottom:4px !important;
+  filter:drop-shadow(0 14px 30px rgba(0,0,0,.28)) !important;
+}
+.auth-brand h1{font-size:1.1rem !important;color:#ffffff !important}
+.auth-brand p{color:rgba(232,223,255,.74) !important;font-size:.86rem !important}
+.auth-tabs{margin:0 0 16px !important}
+.auth-tab{border-radius:14px !important}
+.auth-copy{color:rgba(232,223,255,.78) !important;text-align:center !important;margin-bottom:16px !important}
+.auth-note{color:rgba(232,223,255,.62) !important;text-align:center !important;margin-top:14px !important}
+.auth-note strong{color:#d9c4ff !important}
+.auth-card .flbl{color:#d9c4ff !important}
+.auth-card .finput{
+  background:rgba(255,255,255,.08) !important;
+  border:1px solid rgba(165,118,255,.28) !important;
+  color:#ffffff !important;
+}
+.auth-card .finput::placeholder{color:rgba(232,223,255,.44) !important}
+.auth-card .finput:focus{
+  border-color:#9b63ff !important;
+  box-shadow:0 0 0 4px rgba(155,99,255,.18) !important;
+}
+.auth-card .btn-primary{
+  background:linear-gradient(90deg,#6c2cff 0%,#8f49ff 100%) !important;
+  color:#fff !important;
+  border:none !important;
+  box-shadow:0 16px 26px rgba(108,44,255,.34) !important;
+}
+.auth-card .btn-secondary{
+  background:rgba(255,255,255,.08) !important;
+  color:#dfceff !important;
+  border:1px solid rgba(165,118,255,.22) !important;
+}
+.auth-error{
+  background:rgba(255,86,86,.14) !important;
+  border-color:rgba(255,86,86,.22) !important;
+  color:#ffd7d7 !important;
+}
+#cloud-auth-panel{display:none !important}
+@media(max-width:768px){
+  .auth-card{padding:22px 18px !important}
+  .auth-brand img{width:min(54vw,150px) !important;max-height:140px !important}
+}
+</style>
+<script>
+(function(){
+  function finalAuthSkin(){
+    var subtitle = document.querySelector('.auth-brand p');
+    if(subtitle) subtitle.textContent = 'Sua trilha para o sucesso nos estudos';
+
+    var note = document.querySelector('.auth-note');
+    if(note) note.innerHTML = 'Se quiser recomeçar do zero, use <strong>Apagar dados</strong> na aba <strong>Ciclos</strong>.';
+
+    var authCopy = document.querySelector('.auth-copy');
+    if(authCopy) authCopy.textContent = 'Faça login na sua trilha.';
+  }
+
+  finalAuthSkin();
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', finalAuthSkin);
+  }
+})();
+</script>
+<script>
+(function(){
+  function finalizeLoginPanel(){
+    var subtitle = document.querySelector('.auth-brand p');
+    if(subtitle) subtitle.textContent = 'Sua trilha para o sucesso nos estudos';
+
+    var note = document.querySelector('.auth-note');
+    if(note) note.innerHTML = 'Se quiser recomeçar do zero, use <strong>Apagar dados</strong> na aba <strong>Ciclos</strong>.';
+
+    var authCopy = document.querySelector('.auth-copy');
+    if(authCopy) authCopy.textContent = 'Faça login na sua trilha.';
+
+    var cloudPanel = document.getElementById('cloud-auth-panel');
+    if(cloudPanel) cloudPanel.innerHTML = '';
+  }
+
+  finalizeLoginPanel();
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', finalizeLoginPanel);
+  }
 })();
 </script>
 </body>
