@@ -5222,5 +5222,260 @@ body{
   normalizeAllPdfStates();
 })();
 </script>
+<style>
+@media(max-width:768px){
+  body.nav-open{overflow:hidden}
+  #sidebar{
+    left:12px !important;
+    right:12px !important;
+    top:64px !important;
+    bottom:auto !important;
+    width:auto !important;
+    min-height:0 !important;
+    max-height:calc(100vh - 76px) !important;
+    border-radius:26px !important;
+    transform:translateY(-18px) scale(.98) !important;
+    opacity:0 !important;
+    pointer-events:none !important;
+    overflow:hidden !important;
+  }
+  #sidebar.open{
+    transform:translateY(0) scale(1) !important;
+    opacity:1 !important;
+    pointer-events:auto !important;
+  }
+  .s-nav{
+    overflow-y:auto !important;
+    padding-bottom:18px !important;
+  }
+}
+</style>
+<script>
+(function(){
+  if(typeof window === 'undefined' || typeof discs === 'undefined') return;
+
+  var timerState = {
+    startedAt: null,
+    pausedAt: null,
+    pausedMs: 0,
+    lastAccountedSeconds: 0,
+    lastSavedMinute: -1
+  };
+
+  function currentDisc(){
+    return (discs || []).find(function(item){ return item.id === tDiscId; }) || null;
+  }
+
+  function getElapsedSeconds(){
+    if(!tRunning || !timerState.startedAt) return Math.max(0, tSecs || 0);
+    var effectiveEnd = (tPaused && timerState.pausedAt) ? timerState.pausedAt : Date.now();
+    return Math.max(0, Math.floor((effectiveEnd - timerState.startedAt - timerState.pausedMs) / 1000));
+  }
+
+  function applyElapsed(){
+    if(!tRunning) return Math.max(0, tSecs || 0);
+    var seconds = getElapsedSeconds();
+    var delta = seconds - (timerState.lastAccountedSeconds || 0);
+    if(delta > 0){
+      dayTime[today()] = (dayTime[today()] || 0) + delta;
+      timerState.lastAccountedSeconds = seconds;
+      var currentMinute = Math.floor(seconds / 60);
+      if(currentMinute > timerState.lastSavedMinute){
+        timerState.lastSavedMinute = currentMinute;
+        if(typeof save === 'function') save();
+      }
+    }
+    tSecs = seconds;
+    return seconds;
+  }
+
+  function updateTimerDisplay(){
+    var label = document.getElementById('t-val');
+    if(label) label.textContent = fmtTime(tSecs || 0);
+  }
+
+  function startTicker(){
+    clearInterval(tInterval);
+    tInterval = setInterval(function(){
+      if(!tRunning) return;
+      applyElapsed();
+      updateTimerDisplay();
+    }, 1000);
+  }
+
+  function hideSidebarOnMobile(){
+    var sidebar = document.getElementById('sidebar');
+    if(sidebar) sidebar.classList.remove('open');
+    document.body.classList.remove('nav-open');
+  }
+
+  window.toggleSidebar = function(){
+    var sidebar = document.getElementById('sidebar');
+    if(!sidebar) return;
+    var willOpen = !sidebar.classList.contains('open');
+    sidebar.classList.toggle('open', willOpen);
+    document.body.classList.toggle('nav-open', willOpen);
+  };
+
+  var previousGo = window.go;
+  if(typeof previousGo === 'function'){
+    window.go = function(page){
+      previousGo(page);
+      hideSidebarOnMobile();
+    };
+  }
+
+  document.addEventListener('click', function(event){
+    if(window.innerWidth > 768) return;
+    var sidebar = document.getElementById('sidebar');
+    var toggle = document.getElementById('mob-toggle');
+    if(!sidebar || !sidebar.classList.contains('open')) return;
+    if(sidebar.contains(event.target)) return;
+    if(toggle && toggle.contains(event.target)) return;
+    hideSidebarOnMobile();
+  });
+
+  window.updTimer = function(){
+    if(tRunning) applyElapsed();
+    updateTimerDisplay();
+  };
+
+  window.startStudy = function(id){
+    if(tRunning){
+      alert('Finalize a sessão atual.');
+      return;
+    }
+
+    tDiscId = id;
+    tSecs = 0;
+    tRunning = true;
+    tPaused = false;
+    timerState.startedAt = Date.now();
+    timerState.pausedAt = null;
+    timerState.pausedMs = 0;
+    timerState.lastAccountedSeconds = 0;
+    timerState.lastSavedMinute = -1;
+
+    var disc = (discs || []).find(function(item){ return item.id === id; });
+    if(disc){
+      disc.status = 'active';
+      if(typeof save === 'function') save();
+    }
+
+    var timerCard = document.getElementById('timer-card');
+    if(timerCard) timerCard.style.display = '';
+    var discName = document.getElementById('t-disc-name');
+    if(discName) discName.textContent = disc ? disc.name : '';
+    var pauseBtn = document.getElementById('btn-pause');
+    if(pauseBtn) pauseBtn.textContent = '⏸ Pausar';
+    var timerValue = document.getElementById('t-val');
+    if(timerValue) timerValue.classList.add('pulse');
+
+    updateTimerDisplay();
+    startTicker();
+    if(typeof go === 'function') go('plan');
+  };
+
+  window.pauseTimer = function(){
+    if(!tRunning) return;
+    var pauseBtn = document.getElementById('btn-pause');
+    var timerValue = document.getElementById('t-val');
+
+    if(!tPaused){
+      applyElapsed();
+      tPaused = true;
+      timerState.pausedAt = Date.now();
+    }else{
+      if(timerState.pausedAt){
+        timerState.pausedMs += (Date.now() - timerState.pausedAt);
+      }
+      timerState.pausedAt = null;
+      tPaused = false;
+    }
+
+    if(pauseBtn) pauseBtn.textContent = tPaused ? '▶ Retomar' : '⏸ Pausar';
+    if(timerValue) timerValue.classList.toggle('pulse', !tPaused);
+    updateTimerDisplay();
+  };
+
+  window.stopTimer = function(){
+    if(!tRunning) return;
+
+    applyElapsed();
+    clearInterval(tInterval);
+    tInterval = null;
+    tRunning = false;
+    tPaused = false;
+
+    var finishedAt = Date.now();
+    var disc = currentDisc();
+    if(disc){
+      disc.studied = (disc.studied || 0) + tSecs;
+      disc.status = 'done';
+      disc.lastStudied = finishedAt;
+      addReview(disc.id, disc.name);
+    }
+
+    sessions.push({
+      id: 's' + finishedAt,
+      discId: tDiscId,
+      discName: disc ? disc.name : '',
+      seconds: tSecs,
+      date: today(),
+      ts: finishedAt
+    });
+
+    lastDiscId = tDiscId;
+    lastDiscName = disc ? disc.name : '';
+
+    var smartContext = window.SmartStudy && window.SmartStudy.activeContext ? window.SmartStudy.activeContext : null;
+    if(smartContext && smartContext.topicId){
+      lastTopicId = smartContext.topicId;
+      var smartTopic = findTopic(smartContext.discId, smartContext.topicId);
+      if(smartTopic) smartTopic.lastStudiedAt = finishedAt;
+    }else if(typeof topicListSafe === 'function'){
+      var pendingTopic = topicListSafe(tDiscId).find(function(topic){ return !topic.done; });
+      lastTopicId = (pendingTopic && pendingTopic.id) || (topicListSafe(tDiscId)[0] && topicListSafe(tDiscId)[0].id) || '';
+    }
+
+    updStreak();
+    if(typeof save === 'function') save();
+
+    var timerCard = document.getElementById('timer-card');
+    if(timerCard) timerCard.style.display = 'none';
+    var doneMessage = document.getElementById('done-msg');
+    if(doneMessage){
+      if(smartContext){
+        doneMessage.textContent = (smartContext.discName || '') + ' - ' + (smartContext.topicName || 'Sessão geral') + '. Sessão registrada. Agora faça questões e deixe a revisão ser agendada automaticamente.';
+      }else{
+        doneMessage.textContent = (disc ? disc.name : '') + ' - ' + fmtH(tSecs) + '. Agora selecione o tópico estudado e registre as questões.';
+      }
+    }
+
+    tDiscId = null;
+    if(window.SmartStudy) window.SmartStudy.activeContext = null;
+    timerState.startedAt = null;
+    timerState.pausedAt = null;
+    timerState.pausedMs = 0;
+    timerState.lastAccountedSeconds = 0;
+    timerState.lastSavedMinute = -1;
+
+    openM('m-done');
+    renderAll();
+  };
+
+  window.addEventListener('beforeunload', function(){
+    if(!tRunning) return;
+    applyElapsed();
+    if(typeof save === 'function') save();
+  });
+
+  document.addEventListener('visibilitychange', function(){
+    if(document.hidden || !tRunning || tPaused) return;
+    applyElapsed();
+    updateTimerDisplay();
+  });
+})();
+</script>
 </body>
 </html>
