@@ -351,6 +351,7 @@ body.auth-ready #auth-logout-btn{display:inline-flex !important}
     <button class="nav-btn" onclick="go('meuseditais')"><span class="ico">🗂️</span>Meus Editais</button>
     <button class="nav-btn" onclick="go('edital')"><span class="ico">📄</span>Edital</button>
     <button class="nav-btn" onclick="go('ciclos')"><span class="ico">🔄</span>Ciclos</button>
+    <button class="nav-btn" onclick="go('conciliacao')"><span class="ico">=</span>Concilia&ccedil;&atilde;o</button>
   </div>
   <div class="s-foot">
     <div class="streak-box">
@@ -565,6 +566,12 @@ body.auth-ready #auth-logout-btn{display:inline-flex !important}
     <div class="sh"><div class="sh-title">Configurar Ciclo</div><button class="btn btn-primary" onclick="generateCycle()">⚡ Gerar</button></div>
     <div class="alert alert-info">💡 Defina o peso de cada disciplina. Maior peso = mais sessões no ciclo.</div>
     <div id="cycle-cfg"></div>
+  </div>
+
+  <!-- CONCILIACAO -->
+  <div id="page-conciliacao" class="page">
+    <div class="sh"><div class="sh-title">Concilia&ccedil;&atilde;o de Editais</div></div>
+    <div id="conciliacao-root"></div>
   </div>
 </div>
 
@@ -8762,6 +8769,845 @@ body{
 
   refreshSelectorsHubFinal();
   if(document.getElementById('page-edital') && document.getElementById('page-edital').classList.contains('active')) renderIntegratedEditalHubFinal();
+})();
+</script>
+<style>
+/* Trilha vNext: edital ativo, conciliacao e ciclo continuo */
+.trilha-vnext-selector{display:grid;grid-template-columns:minmax(220px,1fr) auto auto;gap:8px;align-items:end;margin-bottom:14px}
+.trilha-vnext-selector .card-title{margin-bottom:4px}
+.trilha-empty-state{padding:28px 18px;text-align:center;color:var(--text2)}
+.trilha-empty-state strong{display:block;font-size:1.05rem;color:var(--text);margin-bottom:6px}
+.trilha-today-grid{display:grid;grid-template-columns:1.4fr .8fr;gap:14px;margin-bottom:14px}
+.trilha-today-hero{background:linear-gradient(135deg,#241044 0%,#5b21b6 100%);color:#fff;border-radius:18px;padding:22px;box-shadow:var(--shadow)}
+.trilha-today-kicker{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;opacity:.78;font-weight:800}
+.trilha-today-title{font-size:1.55rem;font-weight:950;margin-top:6px;line-height:1.15}
+.trilha-today-sub{font-size:.86rem;line-height:1.55;opacity:.86;margin-top:8px;max-width:680px}
+.trilha-today-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.trilha-side{background:#fff;border:1px solid var(--border);border-radius:18px;padding:18px;box-shadow:var(--shadow-sm)}
+.trilha-side strong{display:block;font-size:1.05rem;color:var(--text);margin-bottom:5px}
+.trilha-mini-list{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.trilha-mini-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border:1px solid var(--border);border-radius:12px;background:#fff;font-size:.82rem;font-weight:700}
+.trilha-dot{width:9px;height:9px;border-radius:99px;flex-shrink:0}
+.trilha-kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.trilha-week-board{overflow:hidden}
+.trilha-week-scroll{display:grid;grid-template-columns:repeat(7,minmax(150px,1fr));gap:8px;overflow:auto;padding-bottom:4px}
+.trilha-week-day{border:1px solid var(--border);border-radius:14px;padding:10px;background:#fff;min-height:110px}
+.trilha-week-day.today{border-color:#7c3aed;background:#faf5ff}
+.trilha-week-date{font-size:.74rem;font-weight:900;color:var(--text)}
+.trilha-week-status{font-size:.68rem;color:var(--text3);margin-top:2px}
+.trilha-week-pills{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.trilha-week-pill{border:1px solid var(--border);background:#fff;border-radius:999px;padding:6px 8px;font-size:.72rem;text-align:left;cursor:pointer;color:var(--text2)}
+.trilha-conc-toolbar{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end;margin-bottom:14px}
+.trilha-conc-options{display:flex;gap:8px;flex-wrap:wrap}
+.trilha-check{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:999px;font-weight:900}
+.trilha-check.yes{background:#dcfce7;color:#166534}
+.trilha-check.no{background:#fee2e2;color:#991b1b}
+.trilha-total-row td{font-weight:900;background:#faf5ff !important}
+.trilha-hidden{display:none !important}
+.conc-poster{background:radial-gradient(circle at 18% 0%,#4c1d95 0,#160b35 38%,#100722 100%);border-radius:22px;padding:22px;color:#fff;box-shadow:0 18px 45px rgba(32,12,70,.28);overflow:hidden}
+.conc-eyebrow{font-size:.9rem;letter-spacing:.02em;text-transform:uppercase;color:#d8c7ff;font-weight:700}
+.conc-title{font-size:clamp(1.6rem,4vw,2.7rem);line-height:1.02;font-weight:950;margin:4px 0 14px;color:#fff}
+.conc-title strong{color:#fff}
+.conc-card-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:14px}
+.conc-edital-card{border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);border-radius:8px;padding:10px}
+.conc-edital-card strong{display:block;font-size:.86rem;color:#c4ff8f;margin-bottom:2px}
+.conc-edital-card span{font-size:.68rem;color:#d8c7ff}
+.conc-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:14px}
+.conc-summary-pill{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:8px 12px;font-size:.76rem;font-weight:800;color:#fff}
+.conc-table-wrap{border:1px solid rgba(255,255,255,.15);border-radius:12px;overflow:auto;background:rgba(12,6,30,.72)}
+.conc-table{width:100%;min-width:680px;border-collapse:collapse;color:#fff}
+.conc-table th{background:linear-gradient(90deg,#7c3aed,#5b21b6);font-size:.76rem;text-align:center;padding:10px 8px;color:#fff}
+.conc-table th:first-child{text-align:left}
+.conc-table td{border-bottom:1px solid rgba(255,255,255,.08);padding:8px 10px;font-size:.76rem;text-align:center}
+.conc-table td:first-child{text-align:left;font-weight:700;color:#fff}
+.conc-mark{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:999px;color:#fff;font-size:.75rem;font-weight:950;box-shadow:inset 0 -1px 0 rgba(0,0,0,.22)}
+.conc-mark.yes{background:#35b85b}
+.conc-mark.no{background:#df3f35}
+.conc-total td{background:rgba(255,255,255,.12);font-weight:950;color:#ffd166;border-bottom:none}
+.conc-alert{margin-top:12px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:10px 12px;color:#eadfff;font-size:.78rem;font-weight:700}
+.conc-options-card{margin-bottom:14px}
+@media(max-width:900px){
+  .trilha-vnext-selector,.trilha-today-grid,.trilha-conc-toolbar{grid-template-columns:1fr}
+  .trilha-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .trilha-week-scroll{grid-template-columns:repeat(7,150px)}
+}
+</style>
+<script>
+(function(){
+  if(typeof DB === 'undefined') return;
+
+  var PROFILES_KEY = 'cycleProfiles';
+  var ACTIVE_KEY = 'activeCycleProfileId';
+  var applyingVNext = false;
+  var lastCycleAdvanceKey = 'trilha_vnext_last_cycle_advance';
+
+  function clone(value){
+    try{return JSON.parse(JSON.stringify(value));}catch(err){return value;}
+  }
+
+  function profiles(){
+    var stored = DB.get(PROFILES_KEY, []);
+    if(Array.isArray(stored)) return stored;
+    if(stored && typeof stored === 'object') return [stored];
+    return [];
+  }
+
+  function saveProfiles(list){
+    DB.set(PROFILES_KEY, Array.isArray(list) ? list : []);
+  }
+
+  function assertProfileList(){
+    var list = profiles();
+    saveProfiles(list);
+    return list;
+  }
+
+  function blankSnapshot(){
+    return {
+      discs: [],
+      cycle: [],
+      sessions: [],
+      topics: {},
+      streak: {last:null,count:0},
+      daytime: {},
+      questoes: [],
+      topicStats: {},
+      reviews: [],
+      examConfig: {startDate:'',examDate:''},
+      pdfTrack: {},
+      smartPrefs: {topicBoosts:{}},
+      smartIgnore: {},
+      weeklyTargetHours: ''
+    };
+  }
+
+  function snapshotFromState(){
+    return {
+      discs: clone(discs || []),
+      cycle: clone(cycle || []),
+      sessions: clone(sessions || []),
+      topics: clone(topics || {}),
+      streak: clone(streak || {last:null,count:0}),
+      daytime: clone(dayTime || {}),
+      questoes: clone(questoes || []),
+      topicStats: clone(topicStats || {}),
+      reviews: clone(DB.get('reviews', []) || []),
+      examConfig: clone(DB.get('examConfig', {startDate:'',examDate:''}) || {startDate:'',examDate:''}),
+      pdfTrack: clone(DB.get('pdfTrack', {}) || {}),
+      smartPrefs: clone(DB.get('smartPrefs', {topicBoosts:{}}) || {topicBoosts:{}}),
+      smartIgnore: clone(DB.get('smartIgnore', {}) || {}),
+      weeklyTargetHours: DB.get('weeklyTargetHours', '')
+    };
+  }
+
+  function applySnapshot(snapshot){
+    applyingVNext = true;
+    var snap = snapshot || blankSnapshot();
+    discs = Array.isArray(snap.discs) ? clone(snap.discs) : [];
+    cycle = Array.isArray(snap.cycle) ? clone(snap.cycle) : [];
+    sessions = Array.isArray(snap.sessions) ? clone(snap.sessions) : [];
+    topics = snap.topics ? clone(snap.topics) : {};
+    streak = snap.streak ? clone(snap.streak) : {last:null,count:0};
+    dayTime = snap.daytime ? clone(snap.daytime) : {};
+    questoes = Array.isArray(snap.questoes) ? clone(snap.questoes) : [];
+    topicStats = snap.topicStats ? clone(snap.topicStats) : {};
+    DB.set('discs', discs);
+    DB.set('cycle', cycle);
+    DB.set('sessions', sessions);
+    DB.set('topics', topics);
+    DB.set('streak', streak);
+    DB.set('daytime', dayTime);
+    DB.set('questoes', questoes);
+    DB.set('topicStats', topicStats);
+    DB.set('reviews', Array.isArray(snap.reviews) ? clone(snap.reviews) : []);
+    DB.set('examConfig', snap.examConfig ? clone(snap.examConfig) : {startDate:'',examDate:''});
+    DB.set('pdfTrack', snap.pdfTrack ? clone(snap.pdfTrack) : {});
+    DB.set('smartPrefs', snap.smartPrefs ? clone(snap.smartPrefs) : {topicBoosts:{}});
+    DB.set('smartIgnore', snap.smartIgnore ? clone(snap.smartIgnore) : {});
+    DB.set('weeklyTargetHours', snap.weeklyTargetHours || '');
+    applyingVNext = false;
+  }
+
+  function clearOperationalState(){
+    applySnapshot(blankSnapshot());
+  }
+
+  function getActiveEditalStrict(){
+    var activeId = DB.get(ACTIVE_KEY, '');
+    if(!activeId) return null;
+    var profile = assertProfileList().find(function(item){ return item.id === activeId && !item.archived; }) || null;
+    if(!profile) DB.set(ACTIVE_KEY, '');
+    return profile;
+  }
+
+  function saveActiveEditalSnapshot(){
+    if(applyingVNext) return;
+    var activeId = DB.get(ACTIVE_KEY, '');
+    if(!activeId) return;
+    var list = assertProfileList();
+    var index = list.findIndex(function(item){ return item.id === activeId && !item.archived; });
+    if(index < 0) return;
+    list[index].snapshot = snapshotFromState();
+    list[index].updatedAt = new Date().toISOString();
+    if(list[index].snapshot.examConfig){
+      list[index].startDate = list[index].snapshot.examConfig.startDate || '';
+      list[index].examDate = list[index].snapshot.examConfig.examDate || '';
+    }
+    saveProfiles(list);
+  }
+
+  window.getActiveEditalStrict = getActiveEditalStrict;
+  window.applyEditalSnapshot = function(profile){ applySnapshot(profile ? profile.snapshot : blankSnapshot()); };
+  window.saveActiveEditalSnapshot = saveActiveEditalSnapshot;
+
+  function escapeHtml(value){
+    return String(value == null ? '' : value).replace(/[&<>"']/g,function(ch){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];
+    });
+  }
+
+  function liveProfiles(){
+    return assertProfileList().filter(function(profile){ return !profile.archived; });
+  }
+
+  function renderActiveEditalSelector(targetId){
+    var host = document.getElementById(targetId);
+    if(!host) return;
+    var list = liveProfiles();
+    var active = getActiveEditalStrict();
+    var options = list.length ? list.map(function(profile){
+      return '<option value="' + profile.id + '"' + (active && active.id === profile.id ? ' selected' : '') + '>' + escapeHtml(profile.name) + '</option>';
+    }).join('') : '<option value="">Nenhum edital cadastrado</option>';
+    host.innerHTML =
+      '<div class="card trilha-vnext-selector">' +
+        '<div><div class="card-title">Edital ativo</div><div class="stat-sub">Selecione manualmente o edital usado nas telas Hoje, Desempenho, Edital e Ciclo.</div></div>' +
+        '<select class="fsel js-active-edital-select" ' + (!list.length ? 'disabled' : '') + '>' + options + '</select>' +
+        '<button class="btn btn-primary js-active-edital-apply" ' + (!list.length ? 'disabled' : '') + '>Tornar ativo</button>' +
+      '</div>';
+    var select = host.querySelector('.js-active-edital-select');
+    var button = host.querySelector('.js-active-edital-apply');
+    if(button && select) button.onclick = function(){ if(select.value) window.switchCycleProfile(select.value); };
+  }
+  window.renderActiveEditalSelector = renderActiveEditalSelector;
+
+  function refreshSelectors(){
+    ['home-active-profile','stats-active-profile','questoes-active-profile'].forEach(function(id){
+      var el = document.getElementById(id);
+      if(el && (id !== 'questoes-active-profile' || !document.getElementById('page-questoes')?.classList.contains('trilha-hidden'))){
+        renderActiveEditalSelector(id);
+      }
+    });
+    ['edital-nome','cycle-profile-select','hub-active-edital-select','active-edital-final-select'].forEach(function(id){
+      var select = document.getElementById(id);
+      if(!select) return;
+      var list = liveProfiles();
+      var active = getActiveEditalStrict();
+      if(!list.length){
+        select.innerHTML = '<option value="">Nenhum edital cadastrado</option>';
+        select.disabled = true;
+        return;
+      }
+      select.disabled = false;
+      select.innerHTML = list.map(function(profile){
+        return '<option value="' + profile.id + '" data-profile-id="' + profile.id + '"' + (active && active.id === profile.id ? ' selected' : '') + '>' + escapeHtml(profile.name) + '</option>';
+      }).join('');
+    });
+  }
+
+  function redrawCurrent(){
+    refreshSelectors();
+    var activePage = document.querySelector('.page.active');
+    var page = activePage ? activePage.id.replace('page-','') : 'home';
+    if(page === 'home') renderHome();
+    else if(page === 'stats') renderStats();
+    else if(page === 'edital' && typeof renderIntegratedEditalHubFinal === 'function') renderIntegratedEditalHubFinal();
+    else if(page === 'meuseditais') renderMyEditais();
+    else if(page === 'ciclos') renderCycleCfg();
+    else if(page === 'conciliacao') renderConciliacao();
+    else if(typeof renderPage === 'function') renderPage(page);
+    if(typeof updBadges === 'function') updBadges();
+  }
+
+  window.switchCycleProfile = function(profileId){
+    var profile = liveProfiles().find(function(item){ return item.id === profileId; });
+    if(!profile){ alert('Edital nao encontrado.'); return; }
+    saveActiveEditalSnapshot();
+    DB.set(ACTIVE_KEY, profile.id);
+    applySnapshot(profile.snapshot || blankSnapshot());
+    redrawCurrent();
+  };
+  window.setActiveEditalFinal = window.switchCycleProfile;
+
+  window.createCycleProfile = function(){
+    var name = prompt('Nome do edital:', 'Novo edital');
+    if(name == null) return;
+    if(!String(name).trim()){ alert('Informe um nome para o edital.'); return; }
+    var cargo = prompt('Cargo (opcional):', '') || '';
+    saveActiveEditalSnapshot();
+    var list = assertProfileList();
+    list.push({
+      id: 'cp_' + Date.now(),
+      name: String(name),
+      cargo: String(cargo),
+      archived: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      snapshot: blankSnapshot()
+    });
+    saveProfiles(list);
+    refreshSelectors();
+    if(typeof renderMyEditais === 'function') renderMyEditais();
+    alert('Edital criado. Selecione "Tornar ativo" para usar este edital.');
+  };
+
+  window.duplicateCycleProfile = function(profileId){
+    var source = profiles().find(function(item){ return item.id === profileId; });
+    if(!source) return;
+    saveActiveEditalSnapshot();
+    var list = assertProfileList();
+    var copyProfile = clone(source);
+    copyProfile.id = 'cp_' + Date.now();
+    copyProfile.name = source.name + ' (copia)';
+    copyProfile.archived = false;
+    copyProfile.createdAt = new Date().toISOString();
+    copyProfile.updatedAt = new Date().toISOString();
+    list.push(copyProfile);
+    saveProfiles(list);
+    redrawCurrent();
+  };
+
+  window.archiveCycleProfile = function(profileId){
+    var list = assertProfileList();
+    var profile = list.find(function(item){ return item.id === profileId; });
+    if(!profile) return;
+    if(!confirm((profile.archived ? 'Reativar' : 'Arquivar') + ' este edital?')) return;
+    saveActiveEditalSnapshot();
+    profile.archived = !profile.archived;
+    profile.updatedAt = new Date().toISOString();
+    if(profile.archived && DB.get(ACTIVE_KEY, '') === profile.id){
+      DB.set(ACTIVE_KEY, '');
+      clearOperationalState();
+    }
+    saveProfiles(list);
+    redrawCurrent();
+  };
+
+  window.deleteCycleProfile = function(profileId){
+    var list = assertProfileList();
+    var profile = list.find(function(item){ return item.id === profileId; });
+    if(!profile){ alert('Edital nao encontrado.'); return; }
+    if(!confirm('Excluir o edital "' + profile.name + '" e todos os dados dele?')) return;
+    list = list.filter(function(item){ return item.id !== profileId; });
+    saveProfiles(list);
+    if(DB.get(ACTIVE_KEY, '') === profileId){
+      DB.set(ACTIVE_KEY, '');
+      clearOperationalState();
+    }
+    redrawCurrent();
+  };
+  window.deleteEditalByIdFinal = window.deleteCycleProfile;
+  window.deleteActiveEditalFinal = function(){
+    var active = getActiveEditalStrict();
+    if(!active){ alert('Nao ha edital ativo para excluir.'); return; }
+    window.deleteCycleProfile(active.id);
+  };
+
+  function profileStats(profile){
+    var snap = profile.snapshot || blankSnapshot();
+    return {
+      discs: (snap.discs || []).length,
+      topics: Object.keys(snap.topics || {}).reduce(function(sum, discId){ return sum + ((snap.topics[discId] || []).length); }, 0),
+      reviews: (snap.reviews || []).filter(function(item){ return !item.done; }).length
+    };
+  }
+
+  function renderProfileCard(profile){
+    var active = getActiveEditalStrict();
+    var isActive = active && active.id === profile.id;
+    var stats = profileStats(profile);
+    return '<div class="card" style="margin-bottom:12px">' +
+      '<div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap">' +
+        '<div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><strong style="font-size:1rem;color:var(--text)">' + escapeHtml(profile.name) + '</strong>' +
+        (isActive ? '<span class="badge b-active">Ativo</span>' : '') +
+        (profile.archived ? '<span class="badge b-pending">Arquivado</span>' : '') + '</div>' +
+        '<div class="stat-sub" style="margin-top:6px">' + escapeHtml(profile.cargo || 'Cargo nao informado') + '</div>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><span class="topic-tag">' + stats.discs + ' disciplina(s)</span><span class="topic-tag">' + stats.topics + ' topico(s)</span><span class="topic-tag">' + stats.reviews + ' revisao(oes)</span></div></div>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+        (profile.archived ? '<button class="btn btn-secondary" onclick="archiveCycleProfile(\'' + profile.id + '\')">Reativar</button>' : (isActive ? '<button class="btn btn-auth" disabled>Ativo agora</button>' : '<button class="btn btn-primary" onclick="switchCycleProfile(\'' + profile.id + '\')">Tornar ativo</button>')) +
+        '<button class="btn btn-secondary" onclick="duplicateCycleProfile(\'' + profile.id + '\')">Duplicar</button>' +
+        '<button class="btn btn-ghost" onclick="archiveCycleProfile(\'' + profile.id + '\')">' + (profile.archived ? 'Desarquivar' : 'Arquivar') + '</button>' +
+        '<button class="btn btn-danger" onclick="deleteCycleProfile(\'' + profile.id + '\')">Excluir</button></div>' +
+      '</div></div>';
+  }
+
+  window.renderMyEditais = function(){
+    saveActiveEditalSnapshot();
+    var host = document.getElementById('meus-editais-list');
+    if(!host) return;
+    var list = assertProfileList();
+    if(!list.length){
+      host.innerHTML = '<div class="card"><div class="empty"><div class="eico">+</div><div class="etxt">Nenhum edital cadastrado.<br><button class="btn btn-primary" style="margin-top:10px" onclick="createCycleProfile()">Criar primeiro edital</button></div></div></div>';
+      return;
+    }
+    host.innerHTML =
+      '<div class="card" style="margin-bottom:14px"><div class="card-title">Editais independentes</div><div style="font-size:.9rem;color:var(--text2)">Cada edital guarda disciplinas, topicos, questoes, progresso e ciclo proprios. O app so usa o edital marcado manualmente como ativo.</div></div>' +
+      list.filter(function(item){ return !item.archived; }).map(renderProfileCard).join('') +
+      (list.some(function(item){ return item.archived; }) ? '<div class="card"><div class="card-title">Arquivados</div>' + list.filter(function(item){ return item.archived; }).map(renderProfileCard).join('') + '</div>' : '');
+  };
+
+  function daysUntilExam(){
+    var exam = DB.get('examConfig', {startDate:'',examDate:''}) || {startDate:'',examDate:''};
+    if(!exam.examDate) return null;
+    return Math.ceil((new Date(exam.examDate + 'T12:00:00') - new Date(today() + 'T12:00:00')) / 86400000);
+  }
+
+  function editalProgress(){
+    var totalTopics = Object.keys(topics || {}).reduce(function(sum, id){ return sum + ((topics[id] || []).length); }, 0);
+    var doneTopics = Object.keys(topics || {}).reduce(function(sum, id){ return sum + ((topics[id] || []).filter(function(t){ return t.done; }).length); }, 0);
+    if(totalTopics) return Math.round(doneTopics / totalTopics * 100);
+    if(!(discs || []).length) return 0;
+    return Math.round((discs || []).filter(function(d){ return d.status === 'done'; }).length / discs.length * 100);
+  }
+
+  function buildBalancedCycle(){
+    var pool = (discs || []).filter(function(d){ return d && d.id; });
+    var weighted = [];
+    pool.forEach(function(disc){
+      var weight = Math.max(1, parseInt(disc.weight || 1, 10) || 1);
+      var hours = Math.max(1, parseInt(disc.weeklyGoal || 2, 10) || 2);
+      var reps = Math.max(1, weight + Math.ceil(hours / 4));
+      for(var i=0;i<reps;i++) weighted.push(disc);
+    });
+    var out = [];
+    var last = '';
+    var cursor = 0;
+    while(weighted.length){
+      var pickIndex = weighted.findIndex(function(d){ return d.id !== last; });
+      if(pickIndex < 0) pickIndex = 0;
+      var picked = weighted.splice((pickIndex + cursor) % weighted.length, 1)[0] || weighted.shift();
+      if(!picked) break;
+      out.push({discId:picked.id});
+      last = picked.id;
+      cursor++;
+    }
+    pool.forEach(function(disc){
+      if(!out.some(function(slot){ return slot.discId === disc.id; })) out.push({discId:disc.id});
+    });
+    return out;
+  }
+
+  function getContinuousCycleDiscs(limit, offset){
+    var result = [];
+    var sourceCycle = Array.isArray(cycle) && cycle.length ? cycle : buildBalancedCycle();
+    if(!sourceCycle.length) return result;
+    var start = Math.max(0, offset || 0) % sourceCycle.length;
+    var safety = 0;
+    while(result.length < limit && safety < sourceCycle.length * 3){
+      var slot = sourceCycle[(start + safety) % sourceCycle.length];
+      var disc = (discs || []).find(function(item){ return item.id === slot.discId; });
+      if(disc && (!result.some(function(item){ return item.id === disc.id; }) || result.length >= (discs || []).length)){
+        result.push(disc);
+      }
+      safety++;
+    }
+    if(!result.length && (discs || []).length) result = discs.slice(0, limit);
+    return result.slice(0, limit);
+  }
+  window.getContinuousCycleDiscs = getContinuousCycleDiscs;
+
+  function dayOffset(){
+    var exam = DB.get('examConfig', {startDate:'',examDate:''}) || {startDate:'',examDate:''};
+    var start = exam.startDate || today();
+    return Math.max(0, Math.floor((new Date(today() + 'T12:00:00') - new Date(start + 'T12:00:00')) / 86400000));
+  }
+
+  window.generateCycle = function(){
+    var active = getActiveEditalStrict();
+    if(!active){ alert('Selecione manualmente um edital ativo antes de gerar o ciclo.'); return; }
+    if(!(discs || []).length){ alert('Este edital ainda nao tem disciplinas.'); return; }
+    cycle = buildBalancedCycle();
+    DB.set('cycle', cycle);
+    saveActiveEditalSnapshot();
+    if(typeof renderCycleCfg === 'function') renderCycleCfg();
+    if(typeof renderPlan === 'function') renderPlan();
+    if(document.getElementById('page-home')?.classList.contains('active')) renderHome();
+    alert('Ciclo continuo gerado para "' + active.name + '" com ' + cycle.length + ' bloco(s).');
+  };
+  generateCycle = window.generateCycle;
+
+  function applyWeeklyTarget(){
+    var input = document.getElementById('cycle-weekly-target');
+    if(!input) return;
+    var target = parseFloat(input.value);
+    DB.set('weeklyTargetHours', input.value || '');
+    if(!target || target <= 0 || !(discs || []).length){ saveActiveEditalSnapshot(); return; }
+    var totalWeight = discs.reduce(function(sum, disc){ return sum + (Math.max(1, parseInt(disc.weight || 1, 10) || 1)); }, 0) || 1;
+    discs.forEach(function(disc){
+      var weight = Math.max(1, parseInt(disc.weight || 1, 10) || 1);
+      disc.weeklyGoal = Math.max(1, Math.round((target * weight / totalWeight) * 10) / 10);
+    });
+    DB.set('discs', discs);
+    saveActiveEditalSnapshot();
+    renderCycleCfg();
+  }
+  window.applyWeeklyTarget = applyWeeklyTarget;
+
+  window.renderCycleCfg = function(){
+    var host = document.getElementById('cycle-cfg');
+    if(!host) return;
+    var active = getActiveEditalStrict();
+    if(!active){
+      host.innerHTML = '<div id="cycle-active-select"></div><div class="card trilha-empty-state"><strong>Nenhum edital ativo</strong>Selecione manualmente um edital para configurar pesos, metas e ciclo.</div>';
+      renderActiveEditalSelector('cycle-active-select');
+      return;
+    }
+    var exam = DB.get('examConfig', {startDate:'',examDate:''}) || {startDate:'',examDate:''};
+    var left = daysUntilExam();
+    var target = DB.get('weeklyTargetHours', '');
+    host.innerHTML =
+      '<div id="cycle-active-select"></div>' +
+      '<div class="card date-card">' +
+        '<div class="card-title">Datas e meta semanal</div>' +
+        '<div class="date-grid">' +
+          '<div class="fgroup"><label class="flbl">Data inicial</label><input class="finput" type="date" id="cycle-start-date" value="' + escapeHtml(exam.startDate || '') + '"></div>' +
+          '<div class="fgroup"><label class="flbl">Data da prova</label><input class="finput" type="date" id="cycle-exam-date" value="' + escapeHtml(exam.examDate || '') + '"></div>' +
+        '</div>' +
+        '<div class="frow"><div class="fgroup"><label class="flbl">Meta semanal total (opcional)</label><input class="finput" type="number" min="1" step="0.5" id="cycle-weekly-target" value="' + escapeHtml(target || '') + '" placeholder="Ex: 30"></div><div class="fgroup" style="display:flex;align-items:flex-end"><button class="btn btn-secondary" onclick="applyWeeklyTarget()">Dividir por pesos</button></div></div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div class="stat-sub">' + (left === null ? 'Data da prova nao definida.' : (left >= 0 ? 'Faltam ' + left + ' dia(s) para a prova.' : 'A data da prova ja passou.')) + '</div><button class="btn btn-primary" onclick="saveCycleDates()">Salvar datas</button></div>' +
+      '</div>' +
+      (!(discs || []).length ? '<div class="card trilha-empty-state"><strong>Sem disciplinas</strong>Adicione disciplinas ao edital ativo antes de gerar o ciclo.</div>' :
+      '<div class="card" style="margin-bottom:14px">' + discs.map(function(disc){
+        return '<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);flex-wrap:wrap"><div style="width:3px;height:24px;border-radius:99px;background:' + (disc.color || '#7c3aed') + ';flex-shrink:0"></div><span style="flex:1;font-weight:600;font-size:.83rem;min-width:180px">' + escapeHtml(disc.name) + '</span><label class="flbl" style="margin:0">Peso:</label><input type="number" min="1" max="20" value="' + (disc.weight || 1) + '" style="width:64px;padding:4px 7px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);color:var(--text);font-family:inherit;font-size:.8rem" onchange="updateW(\'' + disc.id + '\',this.value);saveActiveEditalSnapshot();renderCycleCfg()"><label class="flbl" style="margin:0">h/sem:</label><input type="number" min="1" max="80" step="0.5" value="' + (disc.weeklyGoal || 2) + '" style="width:72px;padding:4px 7px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);color:var(--text);font-family:inherit;font-size:.8rem" onchange="updateG(\'' + disc.id + '\',this.value);saveActiveEditalSnapshot();renderCycleCfg()"></div>';
+      }).join('') + '</div>') +
+      (cycle.length ? '<div class="card"><div class="card-title">Ciclo Atual (' + cycle.length + ' blocos, repeticao continua)</div>' + cycle.map(function(slot,index){
+        var disc = discs.find(function(item){ return item.id === slot.discId; });
+        return disc ? '<div style="padding:5px 0;border-bottom:1px solid var(--bg4);font-size:.8rem;display:flex;gap:8px;align-items:center"><span style="color:var(--text3);width:26px">' + (index + 1) + '</span><div style="width:3px;height:14px;border-radius:99px;background:' + (disc.color || '#7c3aed') + '"></div>' + escapeHtml(disc.name) + '</div>' : '';
+      }).join('') + '</div>' : '');
+    renderActiveEditalSelector('cycle-active-select');
+  };
+
+  window.saveCycleDates = function(){
+    var active = getActiveEditalStrict();
+    if(!active){ alert('Selecione um edital ativo antes de salvar datas.'); return; }
+    DB.set('examConfig', {
+      startDate: document.getElementById('cycle-start-date')?.value || '',
+      examDate: document.getElementById('cycle-exam-date')?.value || ''
+    });
+    saveActiveEditalSnapshot();
+    renderCycleCfg();
+    if(document.getElementById('page-home')?.classList.contains('active')) renderHome();
+  };
+
+  function renderEmptyHome(){
+    var activeBox = document.getElementById('home-active-profile');
+    var message = document.getElementById('home-message');
+    var stats = document.getElementById('home-stats');
+    var homeCycle = document.getElementById('home-cycle');
+    var alerts = document.getElementById('home-alerts');
+    if(activeBox) renderActiveEditalSelector('home-active-profile');
+    if(alerts) alerts.innerHTML = '';
+    if(message) message.innerHTML = '<div class="card trilha-empty-state"><strong>Nenhum edital ativo</strong>Selecione manualmente um edital em Meus Editais ou no seletor acima. A Home nao gera ciclo nem mostra dias ate a prova sem edital ativo.</div>';
+    if(stats) stats.innerHTML = '';
+    if(homeCycle) homeCycle.innerHTML = '<div class="empty"><div class="etxt">Sem edital ativo.</div></div>';
+  }
+
+  window.renderHome = function(){
+    var active = getActiveEditalStrict();
+    if(!active){ renderEmptyHome(); return; }
+    var activeBox = document.getElementById('home-active-profile');
+    var message = document.getElementById('home-message');
+    var stats = document.getElementById('home-stats');
+    var homeCycle = document.getElementById('home-cycle');
+    if(!activeBox || !message || !stats) return;
+    renderActiveEditalSelector('home-active-profile');
+    var left = daysUntilExam();
+    var todayOffset = dayOffset();
+    var todayList = getContinuousCycleDiscs(Math.min(4, Math.max(1, (discs || []).length || 1)), todayOffset * 4);
+    var main = todayList[0] || null;
+    var progress = editalProgress();
+    var totalSecs = (discs || []).reduce(function(sum, disc){ return sum + (disc.studied || 0); }, 0);
+    var due = (DB.get('reviews', []) || []).filter(function(item){ return !item.done && Number(item.dueAt || 0) <= Date.now(); }).length;
+    activeBox.insertAdjacentHTML('beforeend',
+      '<div class="trilha-today-grid"><section class="trilha-today-hero"><div class="trilha-today-kicker">Hoje no TrilhaApp</div><div class="trilha-today-title">' +
+      (main ? 'Comece por ' + escapeHtml(main.name) : 'Adicione disciplinas ao edital ativo') +
+      '</div><div class="trilha-today-sub">Edital ativo: <strong>' + escapeHtml(active.name) + '</strong>. ' +
+      (left === null ? 'Data da prova nao definida.' : (left >= 0 ? 'Faltam ' + left + ' dia(s) para a prova.' : 'A data da prova ja passou.')) +
+      ' O ciclo e continuo e volta ao inicio naturalmente quando termina.</div><div class="trilha-today-actions">' +
+      (main ? '<button class="btn btn-light" onclick="startStudy(\'' + main.id + '\')">Estudar agora</button><button class="btn btn-light" onclick="markTodayDiscDone(\'' + main.id + '\')">Concluir disciplina</button>' : '') +
+      '<button class="btn btn-light" onclick="go(\'ciclos\')">Ajustar ciclo</button></div></section><aside class="trilha-side"><strong>Materias de hoje</strong><div class="stat-sub">' +
+      (todayList.length ? todayList.length + ' disciplina(s) planejada(s)' : 'Sem disciplinas no edital') + '</div><div class="trilha-mini-list">' +
+      (todayList.length ? todayList.map(function(disc){ return '<div class="trilha-mini-item"><span class="trilha-dot" style="background:' + (disc.color || '#7c3aed') + '"></span>' + escapeHtml(disc.name) + '</div>'; }).join('') : '<div class="stat-sub">Adicione disciplinas para montar o dia.</div>') +
+      '</div></aside></div>');
+    stats.innerHTML =
+      '<div class="stat-card today-kpi"><div class="stat-lbl">Tempo hoje</div><div class="stat-val">' + fmtH((dayTime || {})[today()] || 0) + '</div></div>' +
+      '<div class="stat-card today-kpi"><div class="stat-lbl">Progresso edital</div><div class="stat-val">' + progress + '%</div><div class="stat-sub">disciplinas/topicos</div></div>' +
+      '<div class="stat-card today-kpi"><div class="stat-lbl">Total estudado</div><div class="stat-val">' + fmtH(totalSecs) + '</div></div>' +
+      '<div class="stat-card today-kpi"><div class="stat-lbl">Revisoes</div><div class="stat-val">' + due + '</div><div class="stat-sub">pendente(s)</div></div>';
+    var names = ['dom','seg','ter','qua','qui','sex','sab'];
+    var base = new Date(today() + 'T12:00:00');
+    var cards = '';
+    for(var offset=0; offset<7; offset++){
+      var date = new Date(base); date.setDate(base.getDate() + offset);
+      var label = offset === 0 ? 'Hoje' : offset === 1 ? 'Amanha' : names[date.getDay()] + ', ' + String(date.getDate()).padStart(2,'0') + '/' + String(date.getMonth()+1).padStart(2,'0');
+      var list = getContinuousCycleDiscs(Math.min(4, Math.max(1, (discs || []).length || 1)), (todayOffset + offset) * 4);
+      cards += '<div class="trilha-week-day' + (offset === 0 ? ' today' : '') + '"><div class="trilha-week-date">' + label + '</div><div class="trilha-week-status">' + list.length + ' materia(s)</div><div class="trilha-week-pills">' +
+        (list.length ? list.map(function(disc){ return '<button class="trilha-week-pill" onclick="startStudy(\'' + disc.id + '\')">' + escapeHtml(disc.name) + '</button>'; }).join('') : '<div class="stat-sub">Sem ciclo.</div>') +
+      '</div></div>';
+    }
+    message.innerHTML = '<div class="card trilha-week-board"><div class="sh" style="margin-bottom:10px"><div><div class="card-title">Calendario da semana</div><div class="stat-sub">Distribuicao baseada no ciclo continuo do edital ativo.</div></div><button class="btn btn-secondary" onclick="generateCycle()">Gerar ciclo</button></div><div class="trilha-week-scroll">' + cards + '</div></div>';
+    if(homeCycle){
+      homeCycle.innerHTML = '<div class="trilha-mini-list">' + (todayList.length ? todayList.map(function(disc){ return '<div class="trilha-mini-item"><span class="trilha-dot" style="background:' + (disc.color || '#7c3aed') + '"></span>' + escapeHtml(disc.name) + '</div>'; }).join('') : '<div class="empty"><div class="etxt">Sem materias.</div></div>') + '</div>';
+    }
+  };
+
+  window.markTodayDiscDone = function(discId){
+    var active = getActiveEditalStrict();
+    if(!active){ alert('Selecione um edital ativo.'); return; }
+    var disc = (discs || []).find(function(item){ return item.id === discId; });
+    if(!disc) return;
+    var seconds = Math.max(1, Math.round(((disc.weeklyGoal || 2) * 3600) / 7));
+    disc.studied = (disc.studied || 0) + seconds;
+    disc.status = 'done';
+    disc.lastStudied = Date.now();
+    dayTime[today()] = (dayTime[today()] || 0) + seconds;
+    sessions.push({id:'s' + Date.now(),discId:disc.id,discName:disc.name,seconds:seconds,date:today(),ts:Date.now(),manualDone:true});
+    DB.set('discs', discs);
+    DB.set('daytime', dayTime);
+    DB.set('sessions', sessions);
+    if(typeof updStreak === 'function') updStreak();
+    saveActiveEditalSnapshot();
+    renderHome();
+    if(typeof renderPlan === 'function') renderPlan();
+  };
+
+  var previousStopTimer = typeof stopTimer === 'function' ? stopTimer : null;
+  if(previousStopTimer){
+    stopTimer = function(){
+      previousStopTimer();
+      saveActiveEditalSnapshot();
+    };
+    window.stopTimer = stopTimer;
+  }
+
+  var previousAddDisc = typeof addDisc === 'function' ? addDisc : null;
+  window.addDisc = function(){
+    if(!getActiveEditalStrict()){ alert('Selecione manualmente um edital ativo antes de adicionar disciplinas.'); return; }
+    var nameEl = document.getElementById('dn-input');
+    var name = nameEl ? nameEl.value.trim() : '';
+    if(!name){ alert('Informe o nome.'); return; }
+    var id = 'd' + Date.now();
+    var total = parseInt(document.getElementById('dp-total')?.value || '0', 10) || 0;
+    var done = parseInt(document.getElementById('dp-done')?.value || '0', 10) || 0;
+    discs.push({
+      id:id,
+      name:name,
+      color:typeof addColor !== 'undefined' ? addColor : COLORS[discs.length % COLORS.length],
+      weight:parseInt(document.getElementById('dw-input')?.value || '1', 10) || 1,
+      weeklyGoal:parseFloat(document.getElementById('dh-input')?.value || '2') || 2,
+      studied:0,
+      status:'pending',
+      lastStudied:null,
+      pdfTotal:Math.max(total, done),
+      pdfDone:Math.max(0, done)
+    });
+    topics[id] = [];
+    DB.set('discs', discs);
+    DB.set('topics', topics);
+    saveActiveEditalSnapshot();
+    closeM('m-add-disc');
+    ['dn-input','dh-input','dw-input','dp-total','dp-done'].forEach(function(id){ var el = document.getElementById(id); if(el) el.value=''; });
+    renderAll();
+  };
+  addDisc = window.addDisc;
+
+  function ensureActiveForEdital(){
+    if(getActiveEditalStrict()) return true;
+    alert('Selecione manualmente um edital ativo antes de processar ou importar disciplinas.');
+    return false;
+  }
+
+  var previousProcessEdital = typeof processEdital === 'function' ? processEdital : null;
+  window.processEdital = function(){
+    if(!ensureActiveForEdital()) return;
+    if(previousProcessEdital) previousProcessEdital();
+  };
+  processEdital = window.processEdital;
+
+  var previousAddFromEdital = typeof addFromEdital === 'function' ? addFromEdital : null;
+  window.addFromEdital = function(name,key){
+    if(!ensureActiveForEdital()) return;
+    if(discs.find(function(d){ return d.name === name; })){ alert('"' + name + '" ja existe neste edital.'); return; }
+    var parsed = window._editalParsed;
+    var id = 'd' + Date.now() + Math.random();
+    discs.push({id:id,name:name,color:COLORS[discs.length % COLORS.length],weight:1,weeklyGoal:2,studied:0,status:'pending',lastStudied:null,pdfTotal:0,pdfDone:0});
+    topics[id] = ((parsed && parsed.dm[key] && parsed.dm[key].topics) || []).map(function(topic){ return {name:topic,done:false,id:'t' + Date.now() + Math.random()}; });
+    DB.set('discs', discs); DB.set('topics', topics); saveActiveEditalSnapshot();
+    alert('"' + name + '" adicionada!');
+  };
+  addFromEdital = window.addFromEdital;
+
+  window.addAllEdital = function(){
+    if(!ensureActiveForEdital()) return;
+    var parsed = window._editalParsed;
+    if(!parsed) return;
+    var added = 0;
+    parsed.do_.forEach(function(key){
+      var item = parsed.dm[key];
+      if(discs.find(function(d){ return d.name === item.name; })) return;
+      var id = 'd' + Date.now() + Math.random();
+      discs.push({id:id,name:item.name,color:COLORS[discs.length % COLORS.length],weight:1,weeklyGoal:2,studied:0,status:'pending',lastStudied:null,pdfTotal:0,pdfDone:0});
+      topics[id] = (item.topics || []).map(function(topic){ return {name:topic,done:false,id:'t' + Date.now() + Math.random()}; });
+      added++;
+    });
+    DB.set('discs', discs); DB.set('topics', topics); saveActiveEditalSnapshot();
+    alert(added + ' adicionada(s)!');
+    renderAll();
+  };
+  addAllEdital = window.addAllEdital;
+
+  function injectQuestionsIntoStats(){
+    var statsPage = document.getElementById('page-stats');
+    if(!statsPage || document.getElementById('stats-questions-unified')) return;
+    var block = document.createElement('div');
+    block.id = 'stats-questions-unified';
+    block.innerHTML =
+      '<div class="card" style="margin-bottom:14px"><div class="sh"><div class="card-title" style="margin-bottom:0">Questoes</div><button class="btn btn-primary" onclick="openM(\'m-add-q\')">+ Registrar</button></div><div class="grid-4" style="margin:12px 0" id="q-stats"></div></div>' +
+      '<div class="card" style="margin-bottom:14px"><div class="card-title">Desempenho por Disciplina</div><div id="q-by-disc"></div></div>' +
+      '<div class="card" style="margin-bottom:14px"><div class="card-title">Desempenho por Topico</div><div id="q-by-topic"></div></div>' +
+      '<div class="card"><div class="card-title">Historico de Questoes</div><div id="q-list"></div></div>';
+    statsPage.appendChild(block);
+  }
+
+  var previousRenderStats = typeof renderStats === 'function' ? renderStats : null;
+  window.renderStats = function(){
+    if(!getActiveEditalStrict()){
+      var box = document.getElementById('stats-active-profile');
+      if(box) renderActiveEditalSelector('stats-active-profile');
+      var cards = document.getElementById('stats-cards');
+      if(cards) cards.innerHTML = '';
+      return;
+    }
+    injectQuestionsIntoStats();
+    if(previousRenderStats) previousRenderStats();
+    if(typeof renderQuestoes === 'function') renderQuestoes();
+    renderActiveEditalSelector('stats-active-profile');
+  };
+  renderStats = window.renderStats;
+
+  function addConciliacaoPage(){
+    if(!document.getElementById('page-conciliacao')){
+      var page = document.createElement('div');
+      page.id = 'page-conciliacao';
+      page.className = 'page';
+      page.innerHTML = '<div class="sh"><div class="sh-title">Conciliacao de Editais</div></div><div id="conciliacao-root"></div>';
+      document.getElementById('main')?.appendChild(page);
+    }
+    var qNav = document.querySelector('.nav-btn[onclick="go(\'questoes\')"]');
+    if(qNav) qNav.classList.add('trilha-hidden');
+    if(!document.querySelector('.nav-btn[onclick="go(\'conciliacao\')"]')){
+      var ciclos = document.querySelector('.nav-btn[onclick="go(\'ciclos\')"]');
+      var btn = document.createElement('button');
+      btn.className = 'nav-btn';
+      btn.setAttribute('onclick',"go('conciliacao')");
+      btn.innerHTML = '<span class="ico">=</span>Concilia&ccedil;&atilde;o';
+      if(ciclos && ciclos.parentNode) ciclos.parentNode.insertBefore(btn, ciclos.nextSibling);
+    }
+    var qPage = document.getElementById('page-questoes');
+    if(qPage) qPage.classList.add('trilha-hidden');
+  }
+
+  window.renderConciliacao = function(){
+    var root = document.getElementById('conciliacao-root');
+    if(!root) return;
+    var list = assertProfileList().filter(function(profile){ return !profile.archived; });
+    if(list.length < 2){
+      root.innerHTML = '<div class="card trilha-empty-state"><strong>Cadastre pelo menos 2 editais</strong>A conciliacao compara disciplinas entre editais sem alterar dados reais.</div>';
+      return;
+    }
+    var selected = Array.from(document.querySelectorAll('.js-conc-profile:checked')).map(function(input){ return input.value; });
+    if(selected.length < 2) selected = list.slice(0,2).map(function(profile){ return profile.id; });
+    var selectedProfiles = list.filter(function(profile){ return selected.indexOf(profile.id) >= 0; });
+    var names = {};
+    var setsByProfile = {};
+    selectedProfiles.forEach(function(profile){
+      var set = {};
+      ((profile.snapshot && profile.snapshot.discs) || []).forEach(function(disc){
+        if(disc && disc.name){
+          names[disc.name] = true;
+          set[disc.name] = true;
+        }
+      });
+      setsByProfile[profile.id] = set;
+    });
+    var rows = Object.keys(names).sort(function(a,b){ return a.localeCompare(b,'pt-BR'); });
+    var commonCount = rows.filter(function(name){
+      return selectedProfiles.every(function(profile){ return !!setsByProfile[profile.id][name]; });
+    }).length;
+    var commonPercent = rows.length ? Math.round((commonCount / rows.length) * 100) : 0;
+    var titleNames = selectedProfiles.map(function(profile){ return profile.name; }).join(', ');
+    root.innerHTML =
+      '<div class="card conc-options-card"><div class="sh" style="margin-bottom:10px"><div><div class="card-title">Selecionar editais</div><div class="stat-sub">Escolha pelo menos 2 editais para comparar. A tabela usa a uniao completa das disciplinas.</div></div><button class="btn btn-primary" onclick="renderConciliacao()">Comparar</button></div><div class="trilha-conc-options">' +
+      list.map(function(profile){
+        return '<label class="topic-tag"><input type="checkbox" class="js-conc-profile" value="' + profile.id + '"' + (selected.indexOf(profile.id) >= 0 ? ' checked' : '') + '> ' + escapeHtml(profile.name) + '</label>';
+      }).join('') + '</div></div>' +
+      (selectedProfiles.length < 2 ? '<div class="card trilha-empty-state"><strong>Selecione no minimo 2 editais</strong>A tabela aparece depois da selecao.</div>' :
+      '<section class="conc-poster">' +
+        '<div class="conc-eyebrow">Sera que da pra conciliar</div>' +
+        '<div class="conc-title">' + escapeHtml(titleNames) + '?</div>' +
+        '<div class="conc-card-row">' + selectedProfiles.map(function(profile){
+          return '<div class="conc-edital-card"><strong>' + escapeHtml(profile.name) + '</strong><span>' + escapeHtml(profile.cargo || 'Edital cadastrado') + '</span></div>';
+        }).join('') + '</div>' +
+        '<div class="conc-summary"><div class="conc-summary-pill">' + commonPercent + '% comuns</div><div class="conc-summary-pill">' + commonCount + ' em todos</div><div class="conc-summary-pill">' + rows.length + ' na uniao</div></div>' +
+      '<div class="conc-table-wrap"><table class="conc-table"><thead><tr><th>DISCIPLINA</th>' + selectedProfiles.map(function(profile){ return '<th>' + escapeHtml(profile.name) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+      rows.map(function(name){
+        return '<tr><td>' + escapeHtml(name) + '</td>' + selectedProfiles.map(function(profile){
+          var exists = !!setsByProfile[profile.id][name];
+          return '<td><span class="conc-mark ' + (exists ? 'yes' : 'no') + '">' + (exists ? '&#10003;' : '&#10007;') + '</span></td>';
+        }).join('') + '</tr>';
+      }).join('') +
+      '<tr class="conc-total"><td>TOTAL DE DISCIPLINAS</td>' + selectedProfiles.map(function(profile){ return '<td>' + (((profile.snapshot && profile.snapshot.discs) || []).length) + '</td>'; }).join('') + '</tr>' +
+      '</tbody></table></div><div class="conc-alert">Atencao: esta tela e apenas comparativa. Ela nao altera disciplinas, topicos, progresso ou ciclos dos editais.</div></section>');
+  };
+
+  var previousRenderPage = renderPage;
+  renderPage = function(page){
+    if(page === 'conciliacao'){ renderConciliacao(); return; }
+    previousRenderPage(page);
+    if(page === 'stats') renderStats();
+    if(page === 'edital') refreshSelectors();
+  };
+  window.renderPage = renderPage;
+
+  var previousGo = go;
+  go = function(page){
+    previousGo(page);
+    if(page === 'conciliacao') renderConciliacao();
+  };
+  window.go = go;
+
+  var previousSave = save;
+  save = function(){
+    previousSave();
+    if(!applyingVNext) saveActiveEditalSnapshot();
+  };
+  window.save = save;
+
+  document.addEventListener('change', function(event){
+    if(!event.target) return;
+    if(event.target.id === 'edital-nome' || event.target.id === 'cycle-profile-select' || event.target.id === 'hub-active-edital-select' || event.target.id === 'active-edital-final-select'){
+      var option = event.target.options[event.target.selectedIndex];
+      var profileId = option ? (option.dataset.profileId || option.value) : '';
+      if(profileId) window.switchCycleProfile(profileId);
+    }
+  }, true);
+
+  addConciliacaoPage();
+  var active = getActiveEditalStrict();
+  if(active) applySnapshot(active.snapshot || blankSnapshot());
+  else clearOperationalState();
+  refreshSelectors();
+  var current = document.querySelector('.page.active');
+  if(current && current.id === 'page-home') renderHome();
 })();
 </script>
 </body>
