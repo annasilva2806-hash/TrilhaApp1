@@ -9610,5 +9610,232 @@ body{
   if(current && current.id === 'page-home') renderHome();
 })();
 </script>
+<style>
+/* Trilha vNext Calendar Sync */
+html,body{max-width:100%;overflow-x:hidden}
+#main,.page,.topbar{min-width:0;max-width:100%;box-sizing:border-box}
+.page.active{overflow-x:hidden}
+#page-home,#page-home *{box-sizing:border-box}
+#page-home .grid-2,#page-home .grid-3,#page-home .grid-4{max-width:100%;min-width:0}
+#page-home .card{max-width:100%;min-width:0}
+.today-shell{max-width:100%;min-width:0;grid-template-columns:minmax(0,1fr) minmax(260px,360px) !important}
+.today-main-card,.today-side-card{min-width:0;max-width:100%;overflow:hidden}
+.today-week-board,.home-week-board,.week-cycle-board{width:100% !important;max-width:100% !important;min-width:0 !important;overflow:hidden !important}
+.today-week-scroll,.home-week-scroll,.week-cycle-scroll{width:100% !important;max-width:100% !important;min-width:0 !important;overflow-x:auto !important;overflow-y:hidden !important;display:grid !important;grid-template-columns:repeat(auto-fit,minmax(145px,1fr)) !important;gap:10px !important;scrollbar-width:thin}
+.today-week-day,.home-week-day,.week-cycle-day{min-width:0 !important;max-width:100% !important;overflow:hidden !important;overflow-wrap:anywhere !important}
+.today-week-pill,.home-week-task,.week-cycle-task{width:100% !important;max-width:100% !important;white-space:normal !important;overflow-wrap:anywhere !important;word-break:break-word !important}
+.today-week-headline{min-width:0;flex-wrap:wrap}
+.trilha-week-board,.trilha-calendar-sync{width:100%;max-width:100%;box-sizing:border-box;overflow:hidden}
+.trilha-week-scroll,.trilha-calendar-grid{width:100%;max-width:100%;box-sizing:border-box;display:grid;grid-template-columns:repeat(7,minmax(118px,1fr));gap:8px;overflow-x:auto;overflow-y:hidden;padding-bottom:6px;scrollbar-width:thin}
+.trilha-week-day,.trilha-calendar-day{min-width:0;box-sizing:border-box;overflow:hidden;overflow-wrap:anywhere;word-break:break-word}
+.trilha-week-pill,.trilha-calendar-pill{width:100%;max-width:100%;box-sizing:border-box;white-space:normal;overflow-wrap:anywhere;word-break:break-word}
+@media(max-width:1180px){
+  .today-shell{grid-template-columns:1fr !important}
+  .today-week-scroll,.home-week-scroll,.week-cycle-scroll{grid-auto-flow:column !important;grid-auto-columns:minmax(160px,32vw) !important;grid-template-columns:none !important}
+}
+@media(max-width:760px){
+  #main{margin-left:0 !important}
+  .topbar{max-width:100%;overflow:hidden}
+  .topbar-right{min-width:0;flex-wrap:wrap;justify-content:flex-end}
+  .trilha-week-scroll,.trilha-calendar-grid{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(154px,78vw);grid-template-columns:none;overflow-x:auto;overscroll-behavior-x:contain}
+  .today-week-scroll,.home-week-scroll,.week-cycle-scroll{grid-auto-columns:minmax(154px,78vw) !important}
+  .trilha-week-day,.trilha-calendar-day{min-height:118px}
+}
+@media(max-width:420px){
+  .trilha-week-scroll,.trilha-calendar-grid{grid-auto-columns:minmax(142px,86vw)}
+  .today-week-scroll,.home-week-scroll,.week-cycle-scroll{grid-auto-columns:minmax(142px,86vw) !important}
+}
+</style>
+<script>
+(function(){
+  if(typeof DB === 'undefined') return;
+
+  function calClone(value){
+    try{return JSON.parse(JSON.stringify(value));}catch(err){return value;}
+  }
+
+  function calProfiles(){
+    var stored = DB.get('cycleProfiles', []);
+    if(Array.isArray(stored)) return stored;
+    if(stored && typeof stored === 'object') return [stored];
+    return [];
+  }
+
+  function calSaveProfiles(list){
+    DB.set('cycleProfiles', Array.isArray(list) ? list : []);
+  }
+
+  function calBlank(){
+    return {
+      discs: [],
+      cycle: [],
+      sessions: [],
+      topics: {},
+      questoes: [],
+      topicStats: {},
+      reviews: [],
+      examConfig: {startDate:'',examDate:''},
+      daytime: {},
+      streak: {last:null,count:0},
+      pdfTrack: {}
+    };
+  }
+
+  function calActiveProfile(){
+    var activeId = DB.get('activeCycleProfileId', '');
+    if(!activeId) return null;
+    return calProfiles().find(function(profile){ return profile.id === activeId && !profile.archived; }) || null;
+  }
+
+  function calApplySnapshot(profile){
+    var snap = profile && profile.snapshot ? profile.snapshot : calBlank();
+    discs = Array.isArray(snap.discs) ? calClone(snap.discs) : [];
+    cycle = Array.isArray(snap.cycle) ? calClone(snap.cycle) : [];
+    sessions = Array.isArray(snap.sessions) ? calClone(snap.sessions) : [];
+    topics = snap.topics ? calClone(snap.topics) : {};
+    questoes = Array.isArray(snap.questoes) ? calClone(snap.questoes) : [];
+    topicStats = snap.topicStats ? calClone(snap.topicStats) : {};
+    dayTime = snap.daytime ? calClone(snap.daytime) : {};
+    streak = snap.streak ? calClone(snap.streak) : {last:null,count:0};
+    DB.set('discs', discs);
+    DB.set('cycle', cycle);
+    DB.set('sessions', sessions);
+    DB.set('topics', topics);
+    DB.set('questoes', questoes);
+    DB.set('topicStats', topicStats);
+    DB.set('daytime', dayTime);
+    DB.set('streak', streak);
+    DB.set('reviews', Array.isArray(snap.reviews) ? calClone(snap.reviews) : []);
+    DB.set('examConfig', snap.examConfig ? calClone(snap.examConfig) : {startDate:'',examDate:''});
+    DB.set('pdfTrack', snap.pdfTrack ? calClone(snap.pdfTrack) : {});
+  }
+
+  function calSnapshot(){
+    return {
+      discs: calClone(discs || []),
+      cycle: calClone(cycle || []),
+      sessions: calClone(sessions || []),
+      topics: calClone(topics || {}),
+      questoes: calClone(questoes || []),
+      topicStats: calClone(topicStats || {}),
+      reviews: calClone(DB.get('reviews', []) || []),
+      examConfig: calClone(DB.get('examConfig', {startDate:'',examDate:''}) || {startDate:'',examDate:''}),
+      daytime: calClone(dayTime || {}),
+      streak: calClone(streak || {last:null,count:0}),
+      pdfTrack: calClone(DB.get('pdfTrack', {}) || {}),
+      weeklyTargetHours: DB.get('weeklyTargetHours', '')
+    };
+  }
+
+  function calPersistActive(){
+    var active = DB.get('activeCycleProfileId', '');
+    if(!active) return;
+    var list = calProfiles();
+    var index = list.findIndex(function(profile){ return profile.id === active && !profile.archived; });
+    if(index < 0) return;
+    list[index].snapshot = calSnapshot();
+    list[index].updatedAt = new Date().toISOString();
+    calSaveProfiles(list);
+  }
+
+  function calToday(){
+    return typeof today === 'function' ? today() : new Date().toISOString().slice(0,10);
+  }
+
+  function calCycleSource(){
+    if(Array.isArray(cycle) && cycle.length) return cycle;
+    return (discs || []).map(function(disc){ return {discId:disc.id}; });
+  }
+
+  function calDayOffset(){
+    var exam = DB.get('examConfig', {startDate:'',examDate:''}) || {startDate:'',examDate:''};
+    var start = exam.startDate || calToday();
+    return Math.max(0, Math.floor((new Date(calToday() + 'T12:00:00') - new Date(start + 'T12:00:00')) / 86400000));
+  }
+
+  function calDiscsForDay(offset, limit){
+    var source = calCycleSource();
+    var out = [];
+    if(!source.length || !(discs || []).length) return out;
+    var cursor = ((calDayOffset() + offset) * limit) % source.length;
+    var safety = 0;
+    while(out.length < limit && safety < source.length * 3){
+      var slot = source[(cursor + safety) % source.length];
+      var disc = (discs || []).find(function(item){ return item.id === slot.discId; });
+      if(disc && (!out.some(function(item){ return item.id === disc.id; }) || out.length >= discs.length)){
+        out.push(disc);
+      }
+      safety++;
+    }
+    return out.slice(0, limit);
+  }
+
+  function calEscape(value){
+    return String(value == null ? '' : value).replace(/[&<>"']/g,function(ch){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];
+    });
+  }
+
+  function renderSyncedWeekCalendar(){
+    var host = document.getElementById('home-message');
+    if(!host) return;
+    var profile = calActiveProfile();
+    if(!profile){
+      host.innerHTML = '<div class="card trilha-empty-state"><strong>Nenhum edital ativo</strong>Selecione um edital ativo para sincronizar o calendario da semana.</div>';
+      return;
+    }
+    calApplySnapshot(profile);
+    var base = new Date(calToday() + 'T12:00:00');
+    var names = ['dom','seg','ter','qua','qui','sex','sab'];
+    var cards = '';
+    for(var offset=0; offset<7; offset++){
+      var date = new Date(base);
+      date.setDate(base.getDate() + offset);
+      var label = offset === 0 ? 'Hoje' : offset === 1 ? 'Amanha' : names[date.getDay()] + ', ' + String(date.getDate()).padStart(2,'0') + '/' + String(date.getMonth()+1).padStart(2,'0');
+      var list = calDiscsForDay(offset, Math.min(4, Math.max(1, (discs || []).length || 1)));
+      cards += '<div class="trilha-week-day trilha-calendar-day' + (offset === 0 ? ' today' : '') + '">' +
+        '<div class="trilha-week-date">' + label + '</div>' +
+        '<div class="trilha-week-status">' + list.length + ' materia(s)</div>' +
+        '<div class="trilha-week-pills">' +
+          (list.length ? list.map(function(disc){
+            return '<button class="trilha-week-pill trilha-calendar-pill" onclick="startStudy(\'' + disc.id + '\')">' + calEscape(disc.name) + '</button>';
+          }).join('') : '<div class="stat-sub">Sem materias planejadas.</div>') +
+        '</div></div>';
+    }
+    host.innerHTML = '<div class="card trilha-week-board trilha-calendar-sync"><div class="sh" style="margin-bottom:10px"><div><div class="card-title">Calendario da semana</div><div class="stat-sub">Fonte sincronizada: edital ativo salvo em localStorage/snapshot. Role para os lados quando necessario.</div></div><button class="btn btn-secondary" onclick="generateCycle()">Gerar ciclo</button></div><div class="trilha-week-scroll trilha-calendar-grid">' + cards + '</div></div>';
+  }
+
+  var previousRenderHomeCalendarSync = typeof renderHome === 'function' ? renderHome : null;
+  renderHome = function(){
+    if(previousRenderHomeCalendarSync) previousRenderHomeCalendarSync();
+    renderSyncedWeekCalendar();
+  };
+  window.renderHome = renderHome;
+
+  var previousSaveCalendarSync = typeof save === 'function' ? save : null;
+  save = function(){
+    if(previousSaveCalendarSync) previousSaveCalendarSync();
+    calPersistActive();
+    if(document.getElementById('page-home') && document.getElementById('page-home').classList.contains('active')){
+      renderSyncedWeekCalendar();
+    }
+  };
+  window.save = save;
+
+  ['storage','focus','pageshow'].forEach(function(eventName){
+    window.addEventListener(eventName, function(){
+      if(document.getElementById('page-home') && document.getElementById('page-home').classList.contains('active')){
+        var profile = calActiveProfile();
+        if(profile) calApplySnapshot(profile);
+        renderSyncedWeekCalendar();
+      }
+    });
+  });
+
+  if(document.getElementById('page-home') && document.getElementById('page-home').classList.contains('active')){
+    renderSyncedWeekCalendar();
+  }
+})();
+</script>
 </body>
 </html>
